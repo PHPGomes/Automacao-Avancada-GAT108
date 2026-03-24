@@ -8,6 +8,7 @@ import android.view.View;
 
 import java.util.ArrayList;
 import java.util.List;
+import android.util.AttributeSet;
 
 public class GameView extends View {
 
@@ -15,15 +16,14 @@ public class GameView extends View {
     private Alvo alvo;
     private Paint line;
 
-    public GameView(Context context) {
-        super(context);
+
+
+    public GameView(Context context, AttributeSet attrs) {
+        super(context, attrs);
 
         canhoes = new ArrayList<>();
         alvo = new Alvo(getContext(), 500, 500);
-
-        // cria um inicial
         canhoes.add(new Canhao(getContext(), 500, 200));
-
         line = new Paint();
     }
 
@@ -33,28 +33,20 @@ public class GameView extends View {
 
         line.setColor(Color.BLACK);
 
-        // chão
         canvas.drawLine(0, 1200, 1080, 1200, line);
 
-        // desenha todos os canhões
         for (Canhao c : canhoes) {
             c.draw(canvas);
         }
 
-        // desenha alvo
         alvo.draw(canvas);
-
-
-
     }
 
-    // 🔥 método chamado pelo botão
     public void adicionarCanhao() {
         int x = 200 + (int)(Math.random() * 600);
         int y = 200;
 
         canhoes.add(new Canhao(getContext(), x, y));
-
-        invalidate(); // redesenha
+        invalidate();
     }
 }

@@ -2,6 +2,7 @@ package com.example.autotarget;
 
 import android.os.Bundle;
 import android.widget.Button;
+
 import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
@@ -12,22 +13,20 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // usa o XML com os botões
+        // usa o layout XML
         setContentView(R.layout.activity_main);
 
-        // agora sim pode pegar os botões
+        // pega os elementos da tela
+        gameView = findViewById(R.id.gameView);
         Button btnIniciar = findViewById(R.id.btnIniciar);
         Button btnAdicionar = findViewById(R.id.btnAdicionar);
 
-        // cria o GameView (mas ainda não mostra)
-        gameView = new GameView(this);
-
-        // botão iniciar → troca pra tela do jogo
+        // botão iniciar (opcional)
         btnIniciar.setOnClickListener(v -> {
-            setContentView(gameView);
+            // você pode usar pra resetar o jogo depois
         });
 
-        // botão adicionar → adiciona canhão
+        // botão adicionar canhão 🔥
         btnAdicionar.setOnClickListener(v -> {
             gameView.adicionarCanhao();
         });
