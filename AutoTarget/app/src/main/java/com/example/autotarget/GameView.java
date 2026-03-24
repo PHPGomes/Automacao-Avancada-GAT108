@@ -43,6 +43,9 @@ public class GameView extends View {
 
         // desenha alvo
         alvo.draw(canvas);
+
+
+
     }
 
     // 🔥 método chamado pelo botão
