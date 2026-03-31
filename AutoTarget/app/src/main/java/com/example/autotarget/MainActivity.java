@@ -21,12 +21,12 @@ public class MainActivity extends AppCompatActivity {
         Button btnIniciar = findViewById(R.id.btnIniciar);
         Button btnAdicionar = findViewById(R.id.btnAdicionar);
 
-        // botão iniciar (opcional)
+        // botão iniciar
         btnIniciar.setOnClickListener(v -> {
-            // você pode usar pra resetar o jogo depois
+            //
         });
 
-        // botão adicionar canhão 🔥
+        // botão adicionar canhão
         btnAdicionar.setOnClickListener(v -> {
             gameView.adicionarCanhao();
         });
