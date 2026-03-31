@@ -59,7 +59,7 @@ public class Alvo extends Thread {
         canvas.drawCircle(x, y, raio, paint);
     }
 
-    @Override
+
     @Override
     public void run() {
         Atualizadestino();
