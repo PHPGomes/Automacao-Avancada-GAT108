@@ -26,4 +26,5 @@ public class MainActivity extends AppCompatActivity {
             gameView.adicionarCanhao();
         });
     }
+
 }

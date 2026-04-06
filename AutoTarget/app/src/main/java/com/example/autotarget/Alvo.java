@@ -8,7 +8,7 @@ import java.util.Random;
 
 public class Alvo extends Thread {
 
-    private int x, y, raio, tamX, tamY;
+    private int x, y, raio, tamX, tamY,vel;
     private long lastMove;
     private GameView gameView;
     private int desX, desY;
@@ -29,6 +29,8 @@ public class Alvo extends Thread {
         paint = new Paint();
         paint.setColor(Color.RED);
         paint.setStyle(Paint.Style.FILL);
+
+        vel = 4;
     }
 
     private void Atualizadestino() {
@@ -40,14 +42,15 @@ public class Alvo extends Thread {
     }
 
     private synchronized void mover() {
+
         if (System.currentTimeMillis() - lastMove >= 16) {
             lastMove = System.currentTimeMillis();
 
-            if (desX > x) x = Math.min(x + 2, desX);
-            else if (desX < x) x = Math.max(x - 2, desX);
+            if (desX > x) x = Math.min(x + vel, desX);
+            else if (desX < x) x = Math.max(x - vel, desX);
 
-            if (desY > y) y = Math.min(y + 2, desY);
-            else if (desY < y) y = Math.max(y - 2, desY);
+            if (desY > y) y = Math.min(y + vel, desY);
+            else if (desY < y) y = Math.max(y - vel, desY);
         }
 
         // chegou no destino → novo destino
@@ -60,6 +63,7 @@ public class Alvo extends Thread {
             x = Math.max(raio, Math.min(x, tamX - raio));
             y = Math.max(raio, Math.min(y, tamY - raio));
         }
+
     }
 
     public synchronized void draw(Canvas canvas) {
@@ -68,6 +72,10 @@ public class Alvo extends Thread {
 
     public void parar() {
         running = false;
+    }
+
+    private void explodir(){ // inutil ainda mas vai ser quando for atingido pelo projetil
+        parar();
     }
 
     @Override
@@ -84,7 +92,7 @@ public class Alvo extends Thread {
                 mover();
             }
 
-            // ✅ evita null
+            // evita null
             if (gameView != null) {
                 gameView.postInvalidate();
             }

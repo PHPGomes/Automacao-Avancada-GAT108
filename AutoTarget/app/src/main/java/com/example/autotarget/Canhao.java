@@ -5,11 +5,13 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 
-public class Canhao {
+public class Canhao extends Thread {
 
     private int x, y, size;
     private Paint paint;
     private Path path;
+    private boolean running = true;
+    private GameView gameView;
 
     public Canhao(int x, int y) {
         this.x = x;
@@ -39,5 +41,27 @@ public class Canhao {
         path.close();
 
         canvas.drawPath(path, paint);
+    }
+
+
+    public void parar() {
+        running = false;
+    }
+
+    @Override
+    public void run() {
+
+        while (running) { // corrigido
+            // evita null
+            if (gameView != null) {
+                gameView.postInvalidate();
+            }
+
+            try {
+                Thread.sleep(16);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
