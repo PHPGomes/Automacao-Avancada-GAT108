@@ -56,7 +56,6 @@ public class Canhao extends Thread {
             if (gameView != null) {
                 gameView.postInvalidate();
             }
-
             try {
                 Thread.sleep(16);
             } catch (InterruptedException e) {

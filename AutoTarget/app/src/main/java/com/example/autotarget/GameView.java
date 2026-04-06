@@ -78,6 +78,8 @@ public class GameView extends View {
         int y = 200;
 
         canhoes.add(new Canhao(x, y));
+        Canhao c = canhoes.get(canhoes.size() - 1);
+        c.start();
         invalidate();
     }
     public void iniciarJogo() {
@@ -87,9 +89,5 @@ public class GameView extends View {
             alvos.add(a);
             a.start();
         }
-    }
-
-    public void init(){
-        invalidate();
     }
 }
