@@ -75,7 +75,7 @@ public class GameView extends View {
 
     public void adicionarCanhao() {
         int x = 200 + (int)(Math.random() * 600);
-        int y = 200;
+        int y = 100 + (int)(Math.random() * 2500);
 
         canhoes.add(new Canhao(x, y));
         Canhao c = canhoes.get(canhoes.size() - 1);
