@@ -13,6 +13,8 @@ public class Alvo extends Thread {
     private GameView gameView;
     private int desX, desY;
     private Paint paint;
+    private boolean running = true;
+
     Random random = new Random();
 
     public Alvo(int x, int y, int tamX, int tamY, GameView gameView) {
@@ -30,8 +32,11 @@ public class Alvo extends Thread {
     }
 
     private void Atualizadestino() {
-        desX = random.nextInt(tamX);
-        desY = random.nextInt(tamY);
+        // só gera destino se tiver tamanho válido
+        if (tamX > 0 && tamY > 0) {
+            desX = random.nextInt(tamX);
+            desY = random.nextInt(tamY);
+        }
     }
 
     private synchronized void mover() {
@@ -50,25 +55,39 @@ public class Alvo extends Thread {
             Atualizadestino();
         }
 
-        // 🔥 evita sair da tela
-        x = Math.max(raio, Math.min(x, tamX - raio));
-        y = Math.max(raio, Math.min(y, tamY - raio));
+        // evita sair da tela (só se tamanho válido)
+        if (tamX > 0 && tamY > 0) {
+            x = Math.max(raio, Math.min(x, tamX - raio));
+            y = Math.max(raio, Math.min(y, tamY - raio));
+        }
     }
 
     public synchronized void draw(Canvas canvas) {
         canvas.drawCircle(x, y, raio, paint);
     }
 
+    public void parar() {
+        running = false;
+    }
 
     @Override
     public void run() {
-        Atualizadestino();
 
-        while (true) {
-            mover();
+        // evita rodar antes da tela existir
+        if (tamX > 0 && tamY > 0) {
+            Atualizadestino();
+        }
 
-            // 🔥 avisa a UI pra redesenhar
-            gameView.postInvalidate();
+        while (running) { // corrigido
+
+            if (tamX > 0 && tamY > 0) {
+                mover();
+            }
+
+            // ✅ evita null
+            if (gameView != null) {
+                gameView.postInvalidate();
+            }
 
             try {
                 Thread.sleep(16);

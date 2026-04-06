@@ -1,7 +1,5 @@
 package com.example.autotarget;
 
-// [ Import ]
-
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -14,12 +12,9 @@ import android.util.AttributeSet;
 
 public class GameView extends View {
 
-    // [ Atributos ]
     private List<Canhao> canhoes;
     private List<Alvo> alvos;
     private Paint line;
-
-    private GameView gameView;
 
     public GameView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -27,21 +22,19 @@ public class GameView extends View {
         canhoes = new ArrayList<>();
         alvos = new ArrayList<>();
 
-        // cria só o canhão aqui (ok)
         canhoes.add(new Canhao(500, 200));
 
         line = new Paint();
     }
 
-    // Criar alvos
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
 
-        if (alvos.isEmpty()) {
+        if (w > 0 && h > 0 && alvos.isEmpty()) {
             Alvo a = new Alvo(w/2, h/2, w, h, this);
-            a.start();
             alvos.add(a);
+            a.start(); // ✅ depois de adicionar (mais seguro)
         }
     }
 
@@ -49,25 +42,26 @@ public class GameView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
-        // fundo branco (evita tela preta)
         canvas.drawColor(Color.WHITE);
 
-        // linha do meio
         line.setColor(Color.BLACK);
         line.setStrokeWidth(5);
         canvas.drawLine(getWidth() / 2, 0, getWidth() / 2, getHeight(), line);
 
-        // desenha canhões
         for (Canhao c : canhoes) {
-            c.draw(canvas);
+            if (c != null) {
+                c.draw(canvas);
+            }
         }
 
-        // desenha alvos
         for (Alvo a : alvos) {
-            a.draw(canvas);
+            if (a != null) {
+                a.draw(canvas);
+            }
         }
 
-        postInvalidate(); // 🔥 redesenho contínuo
+        // 🔥 garante atualização contínua (extra segurança)
+        invalidate();
     }
 
     public void adicionarCanhao() {
@@ -76,5 +70,12 @@ public class GameView extends View {
 
         canhoes.add(new Canhao(x, y));
         invalidate();
+    }
+    public void iniciarJogo() {
+        if (alvos.isEmpty()) {
+            Alvo a = new Alvo(getWidth()/2, getHeight()/2, getWidth(), getHeight(), this);
+            alvos.add(a);
+            a.start();
+        }
     }
 }
