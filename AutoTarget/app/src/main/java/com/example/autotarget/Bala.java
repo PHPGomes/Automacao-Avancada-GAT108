@@ -21,7 +21,7 @@ public class Bala extends Thread{
     }
 
     public void draw(Canvas canvas) { //criar img bala
-
+        /*
         path.reset();
 
         // topo
@@ -35,7 +35,7 @@ public class Bala extends Thread{
 
         path.close();
 
-        canvas.drawPath(path, paint);
+        canvas.drawPath(path, paint); */
     }
 
     private void mover(){ // definir como bala vai se mover
