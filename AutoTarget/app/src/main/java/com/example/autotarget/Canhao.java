@@ -100,6 +100,10 @@ public class Canhao extends Thread {
         return municao.size();
     }
 
+    public int getX(){
+        return x;
+    }
+
     @Override
     public void run() {
         while (running) {

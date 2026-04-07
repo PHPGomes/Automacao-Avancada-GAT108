@@ -18,6 +18,11 @@ public class GameView extends View {
     private List<Alvo> alvos;
     private Paint line;
 
+    private int pontuacao1,pontuacao2;
+    private Paint texto1;
+    private Paint texto2;
+
+
     Random random = new Random();
 
     public GameView(Context context, AttributeSet attrs) {
@@ -25,8 +30,12 @@ public class GameView extends View {
 
         canhoes = new ArrayList<>();
         alvos = new ArrayList<>();
-
+        texto1 = new Paint();
+        texto2 = new Paint();
         line = new Paint();
+
+        pontuacao1 = 0;
+        pontuacao2 = 0;
     }
 
     private void verificarColisoes() {
@@ -50,7 +59,8 @@ public class GameView extends View {
                         // ACERTOU
                         a.parar();
                         b.parar();
-
+                        if(c.getX()<540){pontuacao1 = pontuacao1 + 1;}
+                        else{pontuacao2 = pontuacao2 + 1;}
                         alvos.remove(a);
                         c.getBalasAtivas().remove(b);
 
@@ -70,6 +80,13 @@ public class GameView extends View {
         line.setColor(Color.BLACK);
         line.setStrokeWidth(5);
         canvas.drawLine(getWidth() / 2, 0, getWidth() / 2, getHeight(), line);
+        texto1.setColor(Color.BLACK);
+        texto1.setTextSize(60);
+        texto2.setColor(Color.BLACK);
+        texto2.setTextSize(60);
+
+        canvas.drawText("Pontos: " + pontuacao1, 50, 80, texto1);
+        canvas.drawText("Pontos: " + pontuacao2, 590, 80, texto2);
 
         verificarColisoes();
 
