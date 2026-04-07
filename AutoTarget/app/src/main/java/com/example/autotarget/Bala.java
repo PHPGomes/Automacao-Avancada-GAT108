@@ -27,7 +27,7 @@ public class Bala extends Thread{
         this.xAlvo = xAlvo;
         this.yAlvo = yAlvo;
         this.gameView = gameView;
-        size = 20;
+        size = 12;
         lastMove = 0;
         vel = 10;
     }

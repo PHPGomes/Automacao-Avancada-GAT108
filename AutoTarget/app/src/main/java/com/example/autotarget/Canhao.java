@@ -20,7 +20,7 @@ public class Canhao extends Thread {
     public Canhao(int x, int y,GameView gameView) {
         this.x = x;
         this.y = y;
-        this.size = 95;
+        this.size = 60;
         this.gameView = gameView;
         numBalas = 10;
 
