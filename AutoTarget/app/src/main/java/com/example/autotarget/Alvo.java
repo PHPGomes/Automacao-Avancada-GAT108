@@ -23,7 +23,7 @@ public class Alvo extends Thread {
         this.tamX = tamX;
         this.tamY = tamY;
         this.gameView = gameView;
-        this.raio = 50;
+        this.raio = 30;
         lastMove = 0;
 
         paint = new Paint();
@@ -36,8 +36,8 @@ public class Alvo extends Thread {
     private void Atualizadestino() {
         // só gera destino se tiver tamanho válido
         if (tamX > 0 && tamY > 0) {
-            desX = random.nextInt(tamX);
-            desY = random.nextInt(tamY);
+            desX = random.nextInt(tamX-200)+100;
+            desY = random.nextInt(tamY-200)+100;
         }
     }
 
@@ -51,6 +51,8 @@ public class Alvo extends Thread {
 
             if (desY > y) y = Math.min(y + vel, desY);
             else if (desY < y) y = Math.max(y - vel, desY);
+
+            System.out.println("x "+x+"; y "+y+"; dest x "+desX+"; dest y "+desY);
         }
 
         // chegou no destino → novo destino

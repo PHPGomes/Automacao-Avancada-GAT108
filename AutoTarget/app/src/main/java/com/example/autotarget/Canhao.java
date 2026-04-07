@@ -20,7 +20,7 @@ public class Canhao extends Thread {
     public Canhao(int x, int y) {
         this.x = x;
         this.y = y;
-        this.size = 150;
+        this.size = 95;
 
         paint = new Paint();
         paint.setColor(Color.BLUE);

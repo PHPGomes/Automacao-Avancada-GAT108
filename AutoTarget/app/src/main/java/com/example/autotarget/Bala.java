@@ -13,10 +13,11 @@ public class Bala extends Thread{
     private GameView gameView;
 
     private int x,y,size,xAlvo,yAlvo,vel;
+    private long lastMove;
 
     public Bala(int xCanhao, int yCanhao, int xAlvo,int yAlvo){
         paint = new Paint();
-        paint.setColor(Color.BLUE);
+        paint.setColor(Color.BLACK);
         paint.setStyle(Paint.Style.FILL);
 
         path = new Path();
@@ -25,7 +26,9 @@ public class Bala extends Thread{
         y = yCanhao;
         this.xAlvo = xAlvo;
         this.yAlvo = yAlvo;
-        size = 45;
+        size = 20;
+        lastMove = 0;
+        vel = 10;
     }
 
     public void draw(Canvas canvas) { //criar img bala
@@ -49,11 +52,23 @@ public class Bala extends Thread{
         canvas.drawPath(path, paint);
     }
 
-    private void mover(){ // definir como bala vai se mover
+    private synchronized void mover() {
 
+        if (System.currentTimeMillis() - lastMove >= 16) {
+            lastMove = System.currentTimeMillis();
+
+            if (xAlvo > x) x = Math.min(x + vel, xAlvo);
+            else if (xAlvo < x) x = Math.max(x - vel, xAlvo);
+
+            if (yAlvo > y) y = Math.min(y + vel, yAlvo);
+            else if (yAlvo < y) y = Math.max(y - vel, yAlvo);
+        }
+
+        // chegou no destino
+        if (x == xAlvo && y == yAlvo) {
+
+        }
     }
-
-
 
 
 
@@ -61,11 +76,11 @@ public class Bala extends Thread{
     public void parar() {
         running = false;
     }
+
     @Override
     public void run() {
-
+        mover();
         while (running) { // corrigido
-            mover();
             // evita null
             if (gameView != null) {
                 gameView.postInvalidate();
