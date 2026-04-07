@@ -47,7 +47,7 @@ public class GameView extends View {
 
                     if (distancia < a.getRaio()) {
 
-                        // 💥 ACERTOU
+                        // ACERTOU
                         a.parar();
                         b.parar();
 
