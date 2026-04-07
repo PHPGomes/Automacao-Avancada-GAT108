@@ -71,8 +71,13 @@ public class Bala extends Thread{
         }
     }
 
+    public int getX() {
+        return x;
+    }
 
-
+    public int getY() {
+        return y;
+    }
 
     public void parar() {
         running = false;

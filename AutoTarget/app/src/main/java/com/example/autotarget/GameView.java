@@ -31,15 +31,49 @@ public class GameView extends View {
         line = new Paint();
     }
 
+    private void verificarColisoes() {
+
+        for (Alvo a : alvos) {
+            if (a == null) continue;
+
+            for (Canhao c : canhoes) {
+                if (c == null) continue;
+
+                for (Bala b : c.getMunicoes()) {
+                    if (b == null) continue;
+
+                    int dx = b.getX() - a.getX();
+                    int dy = b.getY() - a.getY();
+
+                    double distancia = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distancia < a.getRaio()) {
+
+                        // 💥 ACERTOU
+                        a.parar();
+                        b.parar();
+
+                        alvos.remove(a);
+                        c.getMunicoes().remove(b);
+
+                        return; // evita crash de concurrent modification
+                    }
+                }
+            }
+        }
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
-        canvas.drawColor(Color.WHITE);
+        canvas.drawColor(Color.DKGRAY);
 
         line.setColor(Color.BLACK);
         line.setStrokeWidth(5);
         canvas.drawLine(getWidth() / 2, 0, getWidth() / 2, getHeight(), line);
+
+        verificarColisoes();
 
         // Exibir Canhões
         for (Canhao c : canhoes) {
@@ -79,7 +113,9 @@ public class GameView extends View {
         invalidate();
     }
     public void iniciarJogo() {
-        int tipo = random.nextInt(2)+1;
+        int tipo;
+        if(random.nextInt(100)>70){tipo = 2;}
+        else{tipo = 1;}
         Alvo a = new Alvo(getWidth()/2, getHeight()/2, getWidth(), getHeight(),tipo,this);
         alvos.add(a);
         a.start();
