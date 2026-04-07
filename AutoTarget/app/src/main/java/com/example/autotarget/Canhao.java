@@ -16,6 +16,9 @@ public class Canhao extends Thread {
     private boolean running = true;
     private GameView gameView;
     private List<Bala> municao;
+    private List<Bala> balasAtivas;
+    private long ultimoTiro;
+    private int delayTiros;
 
     public Canhao(int x, int y,GameView gameView) {
         this.x = x;
@@ -23,6 +26,8 @@ public class Canhao extends Thread {
         this.size = 60;
         this.gameView = gameView;
         numBalas = 10;
+        ultimoTiro = 0;
+        delayTiros = 1500;
 
         paint = new Paint();
         paint.setColor(Color.BLUE);
@@ -31,6 +36,7 @@ public class Canhao extends Thread {
         path = new Path();
 
         municao = new ArrayList<>();
+        balasAtivas = new ArrayList<>();
         for(int c = 0; c < numBalas; c++){
             municao.add(new Bala(x,y+size,x,3000,gameView));
         }
@@ -60,8 +66,19 @@ public class Canhao extends Thread {
 
     public void atirar(){
         if(!municao.isEmpty()){
-            Bala b = municao.get(0);
-            b.start();
+            if(System.currentTimeMillis() - ultimoTiro > delayTiros){
+
+                Bala b = municao.get(0);
+                municao.remove(0);
+
+                b.setAtiva();
+                balasAtivas.add(b);
+
+
+                b.start();
+
+                ultimoTiro = System.currentTimeMillis();
+            }
         }
     }
 
@@ -70,9 +87,14 @@ public class Canhao extends Thread {
         running = false;
     }
 
+    public List<Bala> getBalasAtivas(){
+        return balasAtivas;
+    }
+
     @Override
     public void run() {
         while (running) {
+            atirar();
             // evita null
             if (gameView != null) {
                 gameView.postInvalidate();

@@ -14,6 +14,7 @@ public class Bala extends Thread{
 
     private int x,y,size,xAlvo,yAlvo,vel;
     private long lastMove;
+    private boolean ativa;
 
     public Bala(int xCanhao, int yCanhao, int xAlvo,int yAlvo,GameView gameView){
         paint = new Paint();
@@ -30,6 +31,7 @@ public class Bala extends Thread{
         size = 12;
         lastMove = 0;
         vel = 10;
+        ativa = false;
     }
 
     public void draw(Canvas canvas) { //criar img bala
@@ -77,6 +79,14 @@ public class Bala extends Thread{
 
     public int getY() {
         return y;
+    }
+
+    public void setAtiva(){
+        ativa = true;
+    }
+
+    public boolean getAtividade(){
+        return ativa;
     }
 
     public void parar() {

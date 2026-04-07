@@ -39,7 +39,7 @@ public class GameView extends View {
             for (Canhao c : canhoes) {
                 if (c == null) continue;
 
-                for (Bala b : c.getMunicoes()) {
+                for (Bala b : c.getBalasAtivas()) {
                     if (b == null) continue;
 
                     int dx = b.getX() - a.getX();
@@ -54,9 +54,9 @@ public class GameView extends View {
                         b.parar();
 
                         alvos.remove(a);
-                        c.getMunicoes().remove(b);
+                        c.getBalasAtivas().remove(b);
 
-                        return; // evita crash de concurrent modification
+                        return; // evita crash
                     }
                 }
             }
@@ -92,7 +92,7 @@ public class GameView extends View {
         // Exibir Balas
         for(Canhao c : canhoes) {
             if(c != null){
-                List<Bala> m = c.getMunicoes();
+                List<Bala> m = c.getBalasAtivas();
                 for(Bala b : m){
                     if(b != null){
                         b.draw(canvas);
