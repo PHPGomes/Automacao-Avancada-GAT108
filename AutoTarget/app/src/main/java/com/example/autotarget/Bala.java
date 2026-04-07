@@ -66,7 +66,7 @@ public class Bala extends Thread{
 
         // chegou no destino
         if (x == xAlvo && y == yAlvo) {
-
+            parar();
         }
     }
 

@@ -30,7 +30,7 @@ public class Canhao extends Thread {
 
         municao = new ArrayList<>();
         for(int c = 0; c < 10; c++){
-            municao.add(new Bala(x,y,x,3000));
+            municao.add(new Bala(x,y+size,x,3000));
         }
     }
 
@@ -57,11 +57,11 @@ public class Canhao extends Thread {
     }
 
     public void atirar(){
-        if(municao.size() > 0){
+        if(!municao.isEmpty()){
             Bala b = municao.get(0);
             b.start();
+            municao.remove(0);
         }
-        else{}
     }
 
 
@@ -71,8 +71,7 @@ public class Canhao extends Thread {
 
     @Override
     public void run() {
-
-        while (running) { // corrigido
+        while (running) {
             // evita null
             if (gameView != null) {
                 gameView.postInvalidate();

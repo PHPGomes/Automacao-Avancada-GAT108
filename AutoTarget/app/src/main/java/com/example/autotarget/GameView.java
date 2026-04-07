@@ -37,17 +37,21 @@ public class GameView extends View {
         line.setStrokeWidth(5);
         canvas.drawLine(getWidth() / 2, 0, getWidth() / 2, getHeight(), line);
 
+        // Exibir Canhões
         for (Canhao c : canhoes) {
             if (c != null) {
                 c.draw(canvas);
             }
         }
 
+        // Exibir Alvos
         for (Alvo a : alvos) {
             if (a != null) {
                 a.draw(canvas);
             }
         }
+
+        // Exibir Balas
         for(Canhao c : canhoes) {
             if(c != null){
                 List<Bala> m = c.getMunicoes();
