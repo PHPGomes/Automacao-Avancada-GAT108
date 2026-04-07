@@ -28,26 +28,6 @@ public class GameView extends View {
     }
 
     @Override
-    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-        super.onSizeChanged(w, h, oldw, oldh);
-
-        if (w > 0 && h > 0 && alvos.isEmpty()) {
-            Alvo a = new Alvo(w/2, h/2, w, h, this);
-            alvos.add(a);
-            a.start(); // ✅ depois de adicionar (mais seguro)
-            Alvo b = new Alvo(w/2, h/2, w, h, this);
-            alvos.add(b);
-            b.start(); // ✅ depois de adicionar (mais seguro)
-            Alvo c = new Alvo(w/2, h/2, w, h, this);
-            alvos.add(c);
-            c.start(); // ✅ depois de adicionar (mais seguro)
-            Alvo d = new Alvo(w/2, h/2, w, h, this);
-            alvos.add(d);
-            d.start(); // ✅ depois de adicionar (mais seguro)
-        }
-    }
-
-    @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
@@ -68,6 +48,9 @@ public class GameView extends View {
                 a.draw(canvas);
             }
         }
+        for(Canhao c : canhoes) {
+
+        }
 
         // 🔥 garante atualização contínua (extra segurança)
         invalidate();
@@ -84,11 +67,8 @@ public class GameView extends View {
         invalidate();
     }
     public void iniciarJogo() {
-
-        if (alvos.isEmpty()) {
-            Alvo a = new Alvo(getWidth()/2, getHeight()/2, getWidth(), getHeight(), this);
-            alvos.add(a);
-            a.start();
-        }
+        Alvo a = new Alvo(getWidth()/2, getHeight()/2, getWidth(), getHeight(), this);
+        alvos.add(a);
+        a.start();
     }
 }
