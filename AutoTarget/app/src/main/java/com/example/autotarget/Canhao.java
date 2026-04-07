@@ -31,8 +31,6 @@ public class Canhao extends Thread {
         municao = new ArrayList<>();
         for(int c = 0; c < 10; c++){
             municao.add(new Bala());
-            Bala b = municao.get(municao.size()-1);
-            b.start();
         }
     }
 
@@ -52,6 +50,14 @@ public class Canhao extends Thread {
         path.close();
 
         canvas.drawPath(path, paint);
+    }
+
+    public void atirar(){
+        if(municao.size() > 0){
+            Bala b = municao.get(0);
+            b.start();
+        }
+        else{}
     }
 
 
