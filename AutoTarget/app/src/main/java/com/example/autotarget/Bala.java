@@ -5,38 +5,22 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 
-import java.util.ArrayList;
-import java.util.List;
+public class Bala extends Thread{
 
-public class Canhao extends Thread {
-
-    private int x, y, size;
     private Paint paint;
     private Path path;
     private boolean running = true;
     private GameView gameView;
-    private List<Bala> municao;
 
-    public Canhao(int x, int y) {
-        this.x = x;
-        this.y = y;
-        this.size = 150;
-
+    public Bala(){
         paint = new Paint();
         paint.setColor(Color.BLUE);
         paint.setStyle(Paint.Style.FILL);
 
         path = new Path();
-
-        municao = new ArrayList<>();
-        for(int c = 0; c < 10; c++){
-            municao.add(new Bala());
-            Bala b = municao.get(municao.size()-1);
-            b.start();
-        }
     }
 
-    public void draw(Canvas canvas) {
+    public void draw(Canvas canvas) { //criar img bala
 
         path.reset();
 
@@ -54,15 +38,23 @@ public class Canhao extends Thread {
         canvas.drawPath(path, paint);
     }
 
+    private void mover(){ // definir como bala vai se mover
+
+    }
+
+
+
+
+
 
     public void parar() {
         running = false;
     }
-
     @Override
     public void run() {
 
         while (running) { // corrigido
+            mover();
             // evita null
             if (gameView != null) {
                 gameView.postInvalidate();
