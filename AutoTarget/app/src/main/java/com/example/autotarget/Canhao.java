@@ -30,7 +30,7 @@ public class Canhao extends Thread {
 
         municao = new ArrayList<>();
         for(int c = 0; c < 10; c++){
-            municao.add(new Bala());
+            municao.add(new Bala(x,y,x,3000));
         }
     }
 

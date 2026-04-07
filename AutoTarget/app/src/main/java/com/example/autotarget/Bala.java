@@ -12,12 +12,19 @@ public class Bala extends Thread{
     private boolean running = true;
     private GameView gameView;
 
-    public Bala(){
+    private int x,y,xAlvo,yAlvo,vel;
+
+    public Bala(int xCanhao, int yCanhao, int xAlvo,int yAlvo){
         paint = new Paint();
         paint.setColor(Color.BLUE);
         paint.setStyle(Paint.Style.FILL);
 
         path = new Path();
+
+        x = xCanhao;
+        y = yCanhao;
+        this.xAlvo = xAlvo;
+        this.yAlvo = yAlvo;
     }
 
     public void draw(Canvas canvas) { //criar img bala

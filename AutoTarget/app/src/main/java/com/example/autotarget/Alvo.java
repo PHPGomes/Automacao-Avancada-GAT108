@@ -30,7 +30,7 @@ public class Alvo extends Thread {
         paint.setColor(Color.RED);
         paint.setStyle(Paint.Style.FILL);
 
-        vel = 4;
+        vel = 6;
     }
 
     private void Atualizadestino() {
