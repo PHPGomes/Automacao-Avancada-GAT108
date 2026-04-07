@@ -49,10 +49,16 @@ public class GameView extends View {
             }
         }
         for(Canhao c : canhoes) {
-
+            if(c != null){
+                List<Bala> m = c.getMunicoes();
+                for(Bala b : m){
+                    if(b != null){
+                        b.draw(canvas);
+                    }
+                }
+            }
         }
-
-        // 🔥 garante atualização contínua (extra segurança)
+        // garante atualização contínua
         invalidate();
     }
 

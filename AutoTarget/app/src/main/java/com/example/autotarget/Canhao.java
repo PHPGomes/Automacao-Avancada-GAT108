@@ -52,6 +52,10 @@ public class Canhao extends Thread {
         canvas.drawPath(path, paint);
     }
 
+    public List<Bala> getMunicoes(){
+        return municao;
+    }
+
     public void atirar(){
         if(municao.size() > 0){
             Bala b = municao.get(0);
