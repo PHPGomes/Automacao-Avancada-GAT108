@@ -85,6 +85,11 @@ public class Bala extends Thread{
         ativa = true;
     }
 
+    public void setAlvo(int x, int y){
+        xAlvo = x;
+        yAlvo = y;
+    }
+
     public boolean getAtividade(){
         return ativa;
     }

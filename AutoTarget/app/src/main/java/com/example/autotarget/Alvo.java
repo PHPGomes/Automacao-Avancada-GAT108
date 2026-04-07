@@ -76,9 +76,7 @@ public class Alvo extends Thread {
     }
 
 
-    public int getX() {
-        return x;
-    }
+    public int getX() {return x;}
     public int getY() {
         return y;
     }
@@ -89,10 +87,6 @@ public class Alvo extends Thread {
 
     public synchronized void draw(Canvas canvas) {
         canvas.drawCircle(x, y, raio, paint);
-    }
-
-    private void explodir(){ // inutil ainda mas vai ser quando for atingido pelo projetil
-        parar();
     }
 
     public void parar() {

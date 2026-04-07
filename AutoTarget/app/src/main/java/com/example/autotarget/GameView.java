@@ -93,7 +93,7 @@ public class GameView extends View {
         // Exibir Canhões
         for (Canhao c : canhoes) {
             if (c != null) {
-                if(c.numBalas()>0) {
+                if(c.numBalas()>=0) {
                     c.draw(canvas);
                 }
             }
@@ -123,10 +123,9 @@ public class GameView extends View {
         int x = 200 + (int)(Math.random() * 600);
         int y = 100 + (int)(Math.random() * 2000);
 
-        canhoes.add(new Canhao(x, y,this));
+        canhoes.add(new Canhao(x, y,this,alvos));
         Canhao c = canhoes.get(canhoes.size() - 1);
         c.start();
-        c.atirar();
         invalidate();
     }
     public void iniciarJogo() {

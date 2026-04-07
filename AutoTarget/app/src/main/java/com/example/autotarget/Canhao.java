@@ -19,12 +19,14 @@ public class Canhao extends Thread {
     private List<Bala> balasAtivas;
     private long ultimoTiro;
     private int delayTiros;
+    private List<Alvo> a;
 
-    public Canhao(int x, int y,GameView gameView) {
+    public Canhao(int x, int y,GameView gameView,List<Alvo> a) {
         this.x = x;
         this.y = y;
         this.size = 60;
         this.gameView = gameView;
+        this.a = a;
         numBalas = 10;
         ultimoTiro = 0;
         delayTiros = 1500;
@@ -37,9 +39,6 @@ public class Canhao extends Thread {
 
         municao = new ArrayList<>();
         balasAtivas = new ArrayList<>();
-        for(int c = 0; c < numBalas; c++){
-            municao.add(new Bala(x,y+size,x,3000,gameView));
-        }
     }
 
     public void draw(Canvas canvas) {
@@ -60,11 +59,21 @@ public class Canhao extends Thread {
         canvas.drawPath(path, paint);
     }
 
-    public List<Bala> getMunicoes(){
-        return municao;
-    }
-
     public void atirar(){
+        int aX;
+        int aY;
+        if(!a.isEmpty()){
+            aX = a.get(0).getX();
+            aY = a.get(0).getY();
+        }
+        else{
+            aX = 0;
+            aY = 0;
+        }
+        if(numBalas>0){
+            municao.add(new Bala(x,y+size,aX,aY,gameView));
+            numBalas = numBalas -1;
+        }
         if(!municao.isEmpty()){
             if(System.currentTimeMillis() - ultimoTiro > delayTiros){
 
@@ -72,8 +81,8 @@ public class Canhao extends Thread {
                 municao.remove(0);
 
                 b.setAtiva();
+                b.setAlvo(aX,aY);
                 balasAtivas.add(b);
-
 
                 b.start();
 
