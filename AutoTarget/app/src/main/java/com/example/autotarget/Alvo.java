@@ -8,7 +8,7 @@ import java.util.Random;
 
 public class Alvo extends Thread {
 
-    private int x, y, raio, tamX, tamY,vel;
+    private int x, y, raio, tamX, tamY,vel,tipo;
     private long lastMove;
     private GameView gameView;
     private int desX, desY;
@@ -17,20 +17,27 @@ public class Alvo extends Thread {
 
     Random random = new Random();
 
-    public Alvo(int x, int y, int tamX, int tamY, GameView gameView) {
+    public Alvo(int x, int y, int tamX, int tamY,int tipo, GameView gameView) {
         this.x = x;
         this.y = y;
         this.tamX = tamX;
         this.tamY = tamY;
+        this.tipo = tipo;
         this.gameView = gameView;
         this.raio = 30;
         lastMove = 0;
 
         paint = new Paint();
-        paint.setColor(Color.RED);
-        paint.setStyle(Paint.Style.FILL);
 
-        vel = 6;
+        if(tipo == 1){ // Verde
+            paint.setColor(Color.GREEN);
+            vel = 6;
+        }
+        else if(tipo == 2){ // Vermelho
+            paint.setColor(Color.RED);
+            vel = 12;
+        }
+        paint.setStyle(Paint.Style.FILL);
     }
 
     private void Atualizadestino() {
@@ -68,17 +75,31 @@ public class Alvo extends Thread {
 
     }
 
+
+    public int getX() {
+        return x;
+    }
+    public int getY() {
+        return y;
+    }
+
+    public int getRaio() {
+        return raio;
+    }
+
     public synchronized void draw(Canvas canvas) {
         canvas.drawCircle(x, y, raio, paint);
+    }
+
+    private void explodir(){ // inutil ainda mas vai ser quando for atingido pelo projetil
+        parar();
     }
 
     public void parar() {
         running = false;
     }
 
-    private void explodir(){ // inutil ainda mas vai ser quando for atingido pelo projetil
-        parar();
-    }
+
 
     @Override
     public void run() {

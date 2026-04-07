@@ -10,17 +10,19 @@ import java.util.List;
 
 public class Canhao extends Thread {
 
-    private int x, y, size;
+    private int x, y, size,numBalas;
     private Paint paint;
     private Path path;
     private boolean running = true;
     private GameView gameView;
     private List<Bala> municao;
 
-    public Canhao(int x, int y) {
+    public Canhao(int x, int y,GameView gameView) {
         this.x = x;
         this.y = y;
         this.size = 95;
+        this.gameView = gameView;
+        numBalas = 10;
 
         paint = new Paint();
         paint.setColor(Color.BLUE);
@@ -29,8 +31,8 @@ public class Canhao extends Thread {
         path = new Path();
 
         municao = new ArrayList<>();
-        for(int c = 0; c < 10; c++){
-            municao.add(new Bala(x,y+size,x,3000));
+        for(int c = 0; c < numBalas; c++){
+            municao.add(new Bala(x,y+size,x,3000,gameView));
         }
     }
 
@@ -60,7 +62,6 @@ public class Canhao extends Thread {
         if(!municao.isEmpty()){
             Bala b = municao.get(0);
             b.start();
-            municao.remove(0);
         }
     }
 

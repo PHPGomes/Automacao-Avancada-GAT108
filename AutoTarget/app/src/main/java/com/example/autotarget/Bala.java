@@ -15,7 +15,7 @@ public class Bala extends Thread{
     private int x,y,size,xAlvo,yAlvo,vel;
     private long lastMove;
 
-    public Bala(int xCanhao, int yCanhao, int xAlvo,int yAlvo){
+    public Bala(int xCanhao, int yCanhao, int xAlvo,int yAlvo,GameView gameView){
         paint = new Paint();
         paint.setColor(Color.BLACK);
         paint.setStyle(Paint.Style.FILL);
@@ -26,6 +26,7 @@ public class Bala extends Thread{
         y = yCanhao;
         this.xAlvo = xAlvo;
         this.yAlvo = yAlvo;
+        this.gameView = gameView;
         size = 20;
         lastMove = 0;
         vel = 10;
@@ -79,8 +80,8 @@ public class Bala extends Thread{
 
     @Override
     public void run() {
-        mover();
         while (running) { // corrigido
+            mover();
             // evita null
             if (gameView != null) {
                 gameView.postInvalidate();

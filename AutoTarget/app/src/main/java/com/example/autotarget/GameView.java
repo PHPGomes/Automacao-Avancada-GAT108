@@ -10,11 +10,15 @@ import java.util.ArrayList;
 import java.util.List;
 import android.util.AttributeSet;
 
+import java.util.Random;
+
 public class GameView extends View {
 
     private List<Canhao> canhoes;
     private List<Alvo> alvos;
     private Paint line;
+
+    Random random = new Random();
 
     public GameView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -22,7 +26,7 @@ public class GameView extends View {
         canhoes = new ArrayList<>();
         alvos = new ArrayList<>();
 
-        canhoes.add(new Canhao(500, 200));
+        canhoes.add(new Canhao(500, 200,this));
 
         line = new Paint();
     }
@@ -62,22 +66,21 @@ public class GameView extends View {
                 }
             }
         }
-        // garante atualização contínua
-        invalidate();
     }
 
     public void adicionarCanhao() {
         int x = 200 + (int)(Math.random() * 600);
         int y = 100 + (int)(Math.random() * 2000);
 
-        canhoes.add(new Canhao(x, y));
+        canhoes.add(new Canhao(x, y,this));
         Canhao c = canhoes.get(canhoes.size() - 1);
         c.start();
         c.atirar();
         invalidate();
     }
     public void iniciarJogo() {
-        Alvo a = new Alvo(getWidth()/2, getHeight()/2, getWidth(), getHeight(), this);
+        int tipo = random.nextInt(2)+1;
+        Alvo a = new Alvo(getWidth()/2, getHeight()/2, getWidth(), getHeight(),tipo,this);
         alvos.add(a);
         a.start();
     }
