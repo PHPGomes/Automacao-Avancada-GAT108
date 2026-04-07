@@ -91,10 +91,21 @@ public class Canhao extends Thread {
         return balasAtivas;
     }
 
+    private void verificaMunicao(){
+        if(municao.isEmpty()){
+            running = false;
+        }
+    }
+    public int numBalas(){
+        return municao.size();
+    }
+
     @Override
     public void run() {
         while (running) {
             atirar();
+            verificaMunicao();
+
             // evita null
             if (gameView != null) {
                 gameView.postInvalidate();

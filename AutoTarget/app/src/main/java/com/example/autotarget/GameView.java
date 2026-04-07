@@ -26,8 +26,6 @@ public class GameView extends View {
         canhoes = new ArrayList<>();
         alvos = new ArrayList<>();
 
-        canhoes.add(new Canhao(500, 200,this));
-
         line = new Paint();
     }
 
@@ -78,7 +76,9 @@ public class GameView extends View {
         // Exibir Canhões
         for (Canhao c : canhoes) {
             if (c != null) {
-                c.draw(canvas);
+                if(c.numBalas()>0) {
+                    c.draw(canvas);
+                }
             }
         }
 
