@@ -12,7 +12,7 @@ public class Bala extends Thread{
     private boolean running = true;
     private GameView gameView;
 
-    private int x,y,xAlvo,yAlvo,vel;
+    private int x,y,size,xAlvo,yAlvo,vel;
 
     public Bala(int xCanhao, int yCanhao, int xAlvo,int yAlvo){
         paint = new Paint();
@@ -25,14 +25,15 @@ public class Bala extends Thread{
         y = yCanhao;
         this.xAlvo = xAlvo;
         this.yAlvo = yAlvo;
+        size = 45;
     }
 
     public void draw(Canvas canvas) { //criar img bala
-        /*
+
         path.reset();
 
-        // topo
-        path.moveTo(x, y);
+        // topo esquerda
+        path.moveTo(x - size, y);
 
         // base esquerda
         path.lineTo(x - size, y + size);
@@ -40,9 +41,12 @@ public class Bala extends Thread{
         // base direita
         path.lineTo(x + size, y + size);
 
+        // topo direita
+        path.lineTo(x + size, y);
+
         path.close();
 
-        canvas.drawPath(path, paint); */
+        canvas.drawPath(path, paint);
     }
 
     private void mover(){ // definir como bala vai se mover
