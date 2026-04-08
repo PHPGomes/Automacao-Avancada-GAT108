@@ -15,6 +15,7 @@ public class Bala extends Thread{
     private int x,y,size,xAlvo,yAlvo,vel;
     private long lastMove;
     private boolean ativa;
+    private double dx, dy;
 
     public Bala(int xCanhao, int yCanhao, int xAlvo,int yAlvo,GameView gameView){
         paint = new Paint();
@@ -25,8 +26,17 @@ public class Bala extends Thread{
 
         x = xCanhao;
         y = yCanhao;
-        this.xAlvo = xAlvo;
-        this.yAlvo = yAlvo;
+
+
+        int deltaX = xAlvo - x;
+        int deltaY = yAlvo - y;
+
+        double distancia = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+        // normaliza (vetor unitário)
+        dx = deltaX / distancia;
+        dy = deltaY / distancia;
+
         this.gameView = gameView;
         size = 12;
         lastMove = 0;
@@ -56,19 +66,13 @@ public class Bala extends Thread{
     }
 
     private synchronized void mover() {
-
         if (System.currentTimeMillis() - lastMove >= 16) {
             lastMove = System.currentTimeMillis();
-
-            if (xAlvo > x) x = Math.min(x + vel, xAlvo);
-            else if (xAlvo < x) x = Math.max(x - vel, xAlvo);
-
-            if (yAlvo > y) y = Math.min(y + vel, yAlvo);
-            else if (yAlvo < y) y = Math.max(y - vel, yAlvo);
+            x += dx * vel;
+            y += dy * vel;
         }
-
-        // chegou no destino
-        if (x == xAlvo && y == yAlvo) {
+        // sair da tela → remove bala
+        if (x < 0 || x > gameView.getWidth() || y < 0 || y > gameView.getHeight()) {
             parar();
         }
     }
