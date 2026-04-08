@@ -89,6 +89,7 @@ public class Bala extends Thread{
         xAlvo = x;
         yAlvo = y;
     }
+    public boolean getRunning(){return running;}
 
     public boolean getAtividade(){
         return ativa;

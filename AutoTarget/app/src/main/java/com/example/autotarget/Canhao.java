@@ -59,35 +59,27 @@ public class Canhao extends Thread {
         canvas.drawPath(path, paint);
     }
 
-    public void atirar(){
-        int aX;
-        int aY;
-        if(!a.isEmpty()){
-            aX = a.get(0).getX();
-            aY = a.get(0).getY();
-        }
-        else{
-            aX = 0;
-            aY = 0;
-        }
-        if(numBalas>0){
-            municao.add(new Bala(x,y+size,aX,aY,gameView));
-            numBalas = numBalas -1;
-        }
-        if(!municao.isEmpty()){
-            if(System.currentTimeMillis() - ultimoTiro > delayTiros){
+    public void atirar() {
 
-                Bala b = municao.get(0);
-                municao.remove(0);
+        if (numBalas <= 0) return;
 
-                b.setAtiva();
-                b.setAlvo(aX,aY);
-                balasAtivas.add(b);
+        if (System.currentTimeMillis() - ultimoTiro > delayTiros) {
 
-                b.start();
+            Alvo alvo = escolherAlvo();
+            if (alvo == null) return;
 
-                ultimoTiro = System.currentTimeMillis();
-            }
+            int aX = alvo.getX();
+            int aY = alvo.getY();
+
+            Bala b = new Bala(x, y + size, aX, aY, gameView);
+
+            b.setAtiva();
+            balasAtivas.add(b);
+
+            b.start();
+
+            numBalas--;
+            ultimoTiro = System.currentTimeMillis();
         }
     }
 
@@ -101,9 +93,28 @@ public class Canhao extends Thread {
     }
 
     private void verificaMunicao(){
-        if(municao.isEmpty()){
+        if(numBalas <= 0 && balasAtivas.isEmpty()){
             running = false;
         }
+    }
+    private Alvo escolherAlvo() {
+        if (a.isEmpty()) return null;
+
+        Alvo alvoEscolhido = null;
+        double menorDistancia = Double.MAX_VALUE;
+
+        for (Alvo alvo : a) {
+            double dx = alvo.getX() - x;
+            double dy = alvo.getY() - y;
+            double dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist < menorDistancia) {
+                menorDistancia = dist;
+                alvoEscolhido = alvo;
+            }
+        }
+
+        return alvoEscolhido;
     }
     public int numBalas(){
         return municao.size();

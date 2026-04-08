@@ -54,7 +54,7 @@ public class GameView extends View {
 
                     double distancia = Math.sqrt(dx * dx + dy * dy);
 
-                    if (distancia < a.getRaio()) {
+                    if (distancia < a.getRaio() && b.getRunning()) {
 
                         // ACERTOU
                         a.parar();
@@ -112,7 +112,7 @@ public class GameView extends View {
                 List<Bala> m = c.getBalasAtivas();
                 for(Bala b : m){
                     if(b != null){
-                        b.draw(canvas);
+                        if(b.getRunning()){ b.draw(canvas);}
                     }
                 }
             }
