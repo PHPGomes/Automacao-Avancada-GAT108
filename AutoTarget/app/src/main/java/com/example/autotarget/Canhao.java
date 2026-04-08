@@ -27,7 +27,7 @@ public class Canhao extends Thread {
         this.size = 60;
         this.gameView = gameView;
         this.a = a;
-        numBalas = 10;
+        numBalas = 25;
         ultimoTiro = 0;
         delayTiros = 1500;
 

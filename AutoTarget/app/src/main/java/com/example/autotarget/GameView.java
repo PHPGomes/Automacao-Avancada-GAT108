@@ -21,6 +21,7 @@ public class GameView extends View {
     private int pontuacao1,pontuacao2;
     private Paint texto1;
     private Paint texto2;
+    private int numAlvos;
 
 
     Random random = new Random();
@@ -36,6 +37,7 @@ public class GameView extends View {
 
         pontuacao1 = 0;
         pontuacao2 = 0;
+        numAlvos = 5;
     }
 
     private void verificarColisoes() {
@@ -130,10 +132,13 @@ public class GameView extends View {
     }
     public void iniciarJogo() {
         int tipo;
-        if(random.nextInt(100)>70){tipo = 2;}
-        else{tipo = 1;}
-        Alvo a = new Alvo(getWidth()/2, getHeight()/2, getWidth(), getHeight(),tipo,this);
-        alvos.add(a);
-        a.start();
+        for(int c = 0; c < numAlvos; c++){
+            if(random.nextInt(100)>70){tipo = 2;}
+            else{tipo = 1;}
+            Alvo a = new Alvo(getWidth()/2, getHeight()/2, getWidth(), getHeight(),tipo,this);
+            alvos.add(a);
+            a.start();
+        }
+        numAlvos = numAlvos + 5;
     }
 }
