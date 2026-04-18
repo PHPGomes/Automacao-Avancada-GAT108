@@ -8,7 +8,7 @@ import java.util.Random;
 
 public class Alvo extends Thread {
 
-    private int x, y, raio, tamX, tamY,vel,tipo;
+    private int x, y, raio, tamX, tamY,vel;
     private long lastMove;
     private GameView gameView;
     private int desX, desY;
@@ -17,26 +17,17 @@ public class Alvo extends Thread {
 
     Random random = new Random();
 
-    public Alvo(int x, int y, int tamX, int tamY,int tipo, GameView gameView) {
+    public Alvo(int x, int y, int tamX, int tamY, GameView gameView) {
         this.x = x;
         this.y = y;
         this.tamX = tamX;
         this.tamY = tamY;
-        this.tipo = tipo;
         this.gameView = gameView;
         this.raio = 30;
         lastMove = 0;
 
         paint = new Paint();
 
-        if(tipo == 1){ // Verde
-            paint.setColor(Color.GREEN);
-            vel = 6;
-        }
-        else if(tipo == 2){ // Vermelho
-            paint.setColor(Color.RED);
-            vel = 12;
-        }
         paint.setStyle(Paint.Style.FILL);
     }
 

@@ -131,11 +131,10 @@ public class GameView extends View {
         invalidate();
     }
     public void iniciarJogo() {
-        int tipo;
         for(int c = 0; c < numAlvos; c++){
-            if(random.nextInt(100)>70){tipo = 2;}
-            else{tipo = 1;}
-            Alvo a = new Alvo(getWidth()/2, getHeight()/2, getWidth(), getHeight(),tipo,this);
+            Alvo a;
+            if(random.nextInt(100)>70){a = new AlvoComum(getWidth()/2, getHeight()/2, getWidth(), getHeight(),this);}
+            else{a = new AlvoRapido(getWidth()/2, getHeight()/2, getWidth(), getHeight(),this);}
             alvos.add(a);
             a.start();
         }
