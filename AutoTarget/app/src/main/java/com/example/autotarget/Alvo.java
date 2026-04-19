@@ -31,7 +31,7 @@ public class Alvo extends Thread {
         paint.setStyle(Paint.Style.FILL);
     }
 
-    private void Atualizadestino() {
+    public void Atualizadestino() {
         // só gera destino se tiver tamanho válido
         if (tamX > 0 && tamY > 0) {
             desX = random.nextInt(tamX-200)+100;
@@ -39,7 +39,7 @@ public class Alvo extends Thread {
         }
     }
 
-    private synchronized void mover() {
+    public void mover() {
 
         if (System.currentTimeMillis() - lastMove >= 16) {
             lastMove = System.currentTimeMillis();
@@ -72,9 +72,14 @@ public class Alvo extends Thread {
         return y;
     }
 
+    public int getTamX(){return tamX;}
+    public int getTamY(){return tamY;}
+    public boolean getRuning(){return running;}
+
     public int getRaio() {
         return raio;
     }
+    public GameView getGameView(){return gameView;}
 
     public synchronized void draw(Canvas canvas) {
         canvas.drawCircle(x, y, raio, paint);
