@@ -13,7 +13,7 @@ public class Alvo extends Thread {
     private long lastMove;
     private GameView gameView;
     private int desX, desY;
-    private Paint paint;
+    protected Paint paint;
     private boolean running = true;
 
     Random random = new Random();
@@ -31,6 +31,7 @@ public class Alvo extends Thread {
         paint = new Paint();
 
         paint.setStyle(Paint.Style.FILL);
+
     }
 
     public void Atualizadestino() {

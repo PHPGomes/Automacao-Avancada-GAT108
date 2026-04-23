@@ -22,6 +22,7 @@ public class GameView extends View {
     private Paint texto1;
     private Paint texto2;
     private int numAlvos;
+    private List<Canhao> remover;
 
 
     Random random = new Random();
@@ -34,6 +35,7 @@ public class GameView extends View {
         texto1 = new Paint();
         texto2 = new Paint();
         line = new Paint();
+        remover = new ArrayList<>();
 
         pontuacao1 = 0;
         pontuacao2 = 0;
@@ -95,11 +97,15 @@ public class GameView extends View {
         // Exibir Canhões
         for (Canhao c : canhoes) {
             if (c != null) {
-                if(c.numBalas()>=0) {
+                if (c.numBalas() > 0 || !c.getBalasAtivas().isEmpty()) {
                     c.draw(canvas);
+                } else {
+                    c.parar();
+                    remover.add(c);
                 }
             }
         }
+        canhoes.removeAll(remover);
 
         // Exibir Alvos
         for (Alvo a : alvos) {

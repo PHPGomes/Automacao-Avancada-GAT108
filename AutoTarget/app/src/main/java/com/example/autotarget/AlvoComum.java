@@ -10,6 +10,7 @@ public class AlvoComum extends Alvo{
 
     public AlvoComum(int x, int y, int tamX, int tamY, GameView gameView){
         super(x, y, tamX, tamY, gameView,6);
+        paint.setColor(Color.GREEN);
     }
 
     @Override
