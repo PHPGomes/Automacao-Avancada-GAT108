@@ -117,7 +117,7 @@ public class Canhao extends Thread {
         return alvoEscolhido;
     }
     public int numBalas(){
-        return municao.size();
+        return balasAtivas.size();
     }
 
     public int getX(){
