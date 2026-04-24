@@ -15,19 +15,17 @@ public class Canhao extends Thread {
     private Path path;
     private boolean running = true;
     private GameView gameView;
-    private List<Bala> municao;
-    private List<Bala> balasAtivas;
     private long ultimoTiro;
     private int delayTiros;
-    private List<Alvo> a;
+    private Jogo jogo;
 
-    public Canhao(int x, int y,GameView gameView,List<Alvo> a) {
+    public Canhao(int x, int y, GameView gameView, Jogo jogo) {
         this.x = x;
         this.y = y;
         this.size = 60;
         this.gameView = gameView;
-        this.a = a;
-        numBalas = 3;
+        this.jogo = jogo;
+        numBalas = 25;
         ultimoTiro = 0;
         delayTiros = 1500;
 
@@ -36,9 +34,6 @@ public class Canhao extends Thread {
         paint.setStyle(Paint.Style.FILL);
 
         path = new Path();
-
-        municao = new ArrayList<>();
-        balasAtivas = new ArrayList<>();
     }
 
     public void draw(Canvas canvas) {
@@ -71,39 +66,27 @@ public class Canhao extends Thread {
             int aX = alvo.getX();
             int aY = alvo.getY();
 
-            Bala b = new Bala(x, y + size, aX, aY, gameView);
-
-            b.setAtiva();
-            balasAtivas.add(b);
-
-            b.start();
+            jogo.criarBala(x, y + size, aX, aY);
 
             numBalas--;
             ultimoTiro = System.currentTimeMillis();
         }
     }
-
+    public boolean getRunning(){
+        return running;
+    }
 
     public void parar() {
         running = false;
     }
-
-    public List<Bala> getBalasAtivas(){
-        return balasAtivas;
-    }
-
-    private void verificaMunicao(){
-        if(numBalas <= 0 && balasAtivas.isEmpty()){
-            running = false;
-        }
-    }
     private Alvo escolherAlvo() {
-        if (a.isEmpty()) return null;
+        List<Alvo> alvos = jogo.getAlvos();
+        if (alvos.isEmpty()) return null;
 
         Alvo alvoEscolhido = null;
         double menorDistancia = Double.MAX_VALUE;
 
-        for (Alvo alvo : a) {
+        for (Alvo alvo : alvos) {
             double dx = alvo.getX() - x;
             double dy = alvo.getY() - y;
             double dist = Math.sqrt(dx * dx + dy * dy);
@@ -113,12 +96,9 @@ public class Canhao extends Thread {
                 alvoEscolhido = alvo;
             }
         }
-
         return alvoEscolhido;
     }
-    public int numBalas(){
-        return balasAtivas.size();
-    }
+
 
     public int getX(){
         return x;
@@ -128,7 +108,9 @@ public class Canhao extends Thread {
     public void run() {
         while (running) {
             atirar();
-            verificaMunicao();
+            if (numBalas <= 0) {
+                running = false;
+            }
 
             // evita null
             if (gameView != null) {

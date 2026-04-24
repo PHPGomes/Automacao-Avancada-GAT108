@@ -14,65 +14,20 @@ import java.util.Random;
 
 public class GameView extends View {
 
-    private List<Canhao> canhoes;
-    private List<Alvo> alvos;
-    private Paint line;
 
-    private int pontuacao1,pontuacao2;
+    private Jogo jogo;
     private Paint texto1;
     private Paint texto2;
-    private int numAlvos;
-    private List<Canhao> remover;
+    private Paint line;
 
-
-    Random random = new Random();
 
     public GameView(Context context, AttributeSet attrs) {
         super(context, attrs);
-
-        canhoes = new ArrayList<>();
-        alvos = new ArrayList<>();
+        jogo = new Jogo(this);
+        jogo.start();
         texto1 = new Paint();
         texto2 = new Paint();
         line = new Paint();
-        remover = new ArrayList<>();
-
-        pontuacao1 = 0;
-        pontuacao2 = 0;
-        numAlvos = 5;
-    }
-
-    private void verificarColisoes() {
-
-        for (Alvo a : alvos) {
-            if (a == null) continue;
-
-            for (Canhao c : canhoes) {
-                if (c == null) continue;
-
-                for (Bala b : c.getBalasAtivas()) {
-                    if (b == null) continue;
-
-                    int dx = b.getX() - a.getX();
-                    int dy = b.getY() - a.getY();
-
-                    double distancia = Math.sqrt(dx * dx + dy * dy);
-
-                    if (distancia < a.getRaio() && b.getRunning()) {
-
-                        // ACERTOU
-                        a.parar();
-                        b.parar();
-                        if(c.getX()<540){pontuacao1 = pontuacao1 + 1;}
-                        else{pontuacao2 = pontuacao2 + 1;}
-                        alvos.remove(a);
-                        c.getBalasAtivas().remove(b);
-
-                        return; // evita crash
-                    }
-                }
-            }
-        }
     }
 
     @Override
@@ -84,66 +39,32 @@ public class GameView extends View {
         line.setColor(Color.BLACK);
         line.setStrokeWidth(5);
         canvas.drawLine(getWidth() / 2, 0, getWidth() / 2, getHeight(), line);
+
         texto1.setColor(Color.BLACK);
         texto1.setTextSize(60);
         texto2.setColor(Color.BLACK);
         texto2.setTextSize(60);
+        canvas.drawText("Pontos: " + jogo.getPontuacao1(), 50, 80, texto1);
+        canvas.drawText("Pontos: " + jogo.getPontuacao2(), 590, 80, texto2);
 
-        canvas.drawText("Pontos: " + pontuacao1, 50, 80, texto1);
-        canvas.drawText("Pontos: " + pontuacao2, 590, 80, texto2);
-
-        verificarColisoes();
-
-        // Exibir Canhões
-        for (Canhao c : canhoes) {
-            if (c != null) {
-                if (c.numBalas() > 0 || !c.getBalasAtivas().isEmpty()) {
-                    c.draw(canvas);
-                } else {
-                    c.parar();
-                    remover.add(c);
-                }
-            }
-        }
-        canhoes.removeAll(remover);
-
-        // Exibir Alvos
-        for (Alvo a : alvos) {
-            if (a != null) {
-                a.draw(canvas);
-            }
+        for (Canhao c : jogo.getCanhoes()) {
+            c.draw(canvas);
         }
 
-        // Exibir Balas
-        for(Canhao c : canhoes) {
-            if(c != null){
-                List<Bala> m = c.getBalasAtivas();
-                for(Bala b : m){
-                    if(b != null){
-                        if(b.getRunning()){ b.draw(canvas);}
-                    }
-                }
-            }
+        for (Alvo a : jogo.getAlvos()) {
+            a.draw(canvas);
+        }
+
+        for (Bala b : jogo.getBalas()) {
+            b.draw(canvas);
         }
     }
 
     public void adicionarCanhao() {
-        int x = 200 + (int)(Math.random() * 600);
-        int y = 100 + (int)(Math.random() * 2000);
-
-        canhoes.add(new Canhao(x, y,this,alvos));
-        Canhao c = canhoes.get(canhoes.size() - 1);
-        c.start();
+        jogo.adicionarCanhao();
         invalidate();
     }
     public void iniciarJogo() {
-        for(int c = 0; c < numAlvos; c++){
-            Alvo a;
-            if(random.nextInt(100)>70){a = new AlvoComum(getWidth()/2, getHeight()/2, getWidth(), getHeight(),this);}
-            else{a = new AlvoRapido(getWidth()/2, getHeight()/2, getWidth(), getHeight(),this);}
-            alvos.add(a);
-            a.start();
-        }
-        numAlvos = numAlvos + 5;
+        jogo.iniciarJogo();
     }
 }
