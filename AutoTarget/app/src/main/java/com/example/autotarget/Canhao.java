@@ -10,7 +10,7 @@ import java.util.List;
 
 public class Canhao extends Thread {
 
-    private int x, y, size,numBalas;
+    private int x, y, size, numBalas;
     private Paint paint;
     private Path path;
     private boolean running = true;
@@ -37,48 +37,43 @@ public class Canhao extends Thread {
     }
 
     public void draw(Canvas canvas) {
-
         path.reset();
-
         // topo
         path.moveTo(x, y);
-
         // base esquerda
         path.lineTo(x - size, y + size);
-
         // base direita
         path.lineTo(x + size, y + size);
-
         path.close();
-
         canvas.drawPath(path, paint);
     }
 
     public void atirar() {
-
         if (numBalas <= 0) return;
 
         if (System.currentTimeMillis() - ultimoTiro > delayTiros) {
-
             Alvo alvo = escolherAlvo();
             if (alvo == null) return;
 
             int aX = alvo.getX();
             int aY = alvo.getY();
 
-            jogo.criarBala(x, y + size, aX, aY);
+            // Passa 'this' (o próprio canhão) para que a bala saiba quem atirou
+            jogo.criarBala(x, y + size, aX, aY, this);
 
             numBalas--;
             ultimoTiro = System.currentTimeMillis();
         }
     }
-    public boolean getRunning(){
+
+    public boolean getRunning() {
         return running;
     }
 
     public void parar() {
         running = false;
     }
+
     private Alvo escolherAlvo() {
         List<Alvo> alvos = jogo.getAlvos();
         if (alvos.isEmpty()) return null;
@@ -87,6 +82,8 @@ public class Canhao extends Thread {
         double menorDistancia = Double.MAX_VALUE;
 
         for (Alvo alvo : alvos) {
+            if (!alvo.getRunning()) continue; // Só atira em alvos ativos
+
             double dx = alvo.getX() - x;
             double dy = alvo.getY() - y;
             double dist = Math.sqrt(dx * dx + dy * dy);
@@ -99,8 +96,7 @@ public class Canhao extends Thread {
         return alvoEscolhido;
     }
 
-
-    public int getX(){
+    public int getX() {
         return x;
     }
 
@@ -112,7 +108,6 @@ public class Canhao extends Thread {
                 running = false;
             }
 
-            // evita null
             if (gameView != null) {
                 gameView.postInvalidate();
             }

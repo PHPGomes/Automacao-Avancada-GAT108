@@ -19,7 +19,7 @@ public class MainActivity extends AppCompatActivity {
         Button btnAdicionar = findViewById(R.id.btnAdicionar);
 
         btnIniciar.setOnClickListener(v -> {
-            gameView.iniciarJogo(); // ✅ agora faz algo
+            gameView.iniciarJogo(); //
         });
 
         btnAdicionar.setOnClickListener(v -> {

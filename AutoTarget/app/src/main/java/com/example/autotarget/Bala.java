@@ -5,19 +5,20 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 
-public class Bala extends Thread{
+public class Bala extends Thread {
 
     private Paint paint;
     private Path path;
     private boolean running = true;
     private GameView gameView;
+    private Canhao canhaoAtirador; // Referência ao canhão que disparou a bala
 
-    private int x,y,size,xAlvo,yAlvo,vel;
+    private int x, y, size, xAlvo, yAlvo, vel;
     private long lastMove;
     private boolean ativa;
     private double dx, dy;
 
-    public Bala(int xCanhao, int yCanhao, int xAlvo,int yAlvo,GameView gameView){
+    public Bala(int xCanhao, int yCanhao, int xAlvo, int yAlvo, GameView gameView, Canhao canhaoAtirador) {
         paint = new Paint();
         paint.setColor(Color.BLACK);
         paint.setStyle(Paint.Style.FILL);
@@ -27,25 +28,30 @@ public class Bala extends Thread{
         x = xCanhao;
         y = yCanhao;
 
-
         int deltaX = xAlvo - x;
         int deltaY = yAlvo - y;
 
         double distancia = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-        // normaliza (vetor unitário)
-        dx = deltaX / distancia;
-        dy = deltaY / distancia;
+        // Prevenção de divisão por zero (CRASH CRÍTICO)
+        if (distancia == 0) {
+            dx = 0;
+            dy = 0;
+        } else {
+            // normaliza (vetor unitário)
+            dx = deltaX / distancia;
+            dy = deltaY / distancia;
+        }
 
         this.gameView = gameView;
+        this.canhaoAtirador = canhaoAtirador; // Armazena a referência do canhão atirador
         size = 12;
         lastMove = 0;
         vel = 10;
         ativa = false;
     }
 
-    public void draw(Canvas canvas) { //criar img bala
-
+    public void draw(Canvas canvas) {
         path.reset();
 
         // topo esquerda
@@ -72,7 +78,7 @@ public class Bala extends Thread{
             y += dy * vel;
         }
         // sair da tela → remove bala
-        if (x < 0 || x > gameView.getWidth() || y < 0 || y > gameView.getHeight()) {
+        if (gameView != null && (x < 0 || x > gameView.getWidth() || y < 0 || y > gameView.getHeight())) {
             parar();
         }
     }
@@ -85,18 +91,25 @@ public class Bala extends Thread{
         return y;
     }
 
-    public void setAtiva(){
+    public void setAtiva() {
         ativa = true;
     }
 
-    public void setAlvo(int x, int y){
+    public void setAlvo(int x, int y) {
         xAlvo = x;
         yAlvo = y;
     }
-    public boolean getRunning(){return running;}
 
-    public boolean getAtividade(){
+    public boolean getRunning() {
+        return running;
+    }
+
+    public boolean getAtividade() {
         return ativa;
+    }
+
+    public Canhao getCanhaoAtirador() {
+        return canhaoAtirador;
     }
 
     public void parar() {
@@ -105,7 +118,7 @@ public class Bala extends Thread{
 
     @Override
     public void run() {
-        while (running) { // corrigido
+        while (running) {
             mover();
             // evita null
             if (gameView != null) {
