@@ -34,8 +34,6 @@ public class Jogo extends Thread {
     public void atualizar() {
         verificarColisoes();
         removerMortos();
-        // Removido: Não adicionar novos alvos automaticamente.
-        // A adição de alvos será controlada apenas pelo botão "Iniciar".
     }
 
     private void verificarColisoes() {
