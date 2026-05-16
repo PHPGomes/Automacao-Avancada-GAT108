@@ -2,7 +2,9 @@ package com.example.autotarget;
 
 import android.graphics.Paint;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -14,6 +16,8 @@ public class Jogo extends Thread {
     private List<Alvo> alvosEsquerda;
     private List<Alvo> alvosDireita;
     private List<Bala> balas;
+    private Map<Alvo, List<LeituraSensor>> bufferEsquerda;
+    private Map<Alvo, List<LeituraSensor>> bufferDireita;
 
     private int pontuacao1, pontuacao2;
     private int numAlvos;
@@ -26,6 +30,7 @@ public class Jogo extends Thread {
     private int energiaDireita;
     private int tempoRestante = 60;
     private long ultimoSegundo;
+    private long ultimaColeta;
     private boolean jogoFinalizado = false;
     private boolean partidaIniciada = false;
 
@@ -40,7 +45,10 @@ public class Jogo extends Thread {
         alvosEsquerda = new CopyOnWriteArrayList<>();
         alvosDireita = new CopyOnWriteArrayList<>();
         balas = new CopyOnWriteArrayList<>();
+        bufferEsquerda = new HashMap<>();
+        bufferDireita = new HashMap<>();
         numAlvos = 5;
+        ultimaColeta = 0;
         energiaEsquerda = iniEnergiaEsquerda;
         energiaDireita = iniEnergiaDireita;
     }
@@ -220,6 +228,44 @@ public class Jogo extends Thread {
             semaforoAlvos.release();
         } catch (InterruptedException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void coletarDadosSensores() {
+
+        if (System.currentTimeMillis() - ultimaColeta < 1000) {
+            return;
+        }
+
+        ultimaColeta = System.currentTimeMillis();
+
+        coletarLado(alvosEsquerda, bufferEsquerda);
+
+        coletarLado(alvosDireita, bufferDireita);
+    }
+
+    private void coletarLado(
+            List<Alvo> alvos,
+            Map<Alvo, List<LeituraSensor>> buffer
+    ) {
+
+        for (Alvo alvo : alvos) {
+
+            LeituraSensor leitura = alvo.gerarLeitura();
+
+            buffer.putIfAbsent(
+                    alvo,
+                    new ArrayList<>()
+            );
+
+            List<LeituraSensor> historico =
+                    buffer.get(alvo);
+
+            historico.add(leitura);
+
+            if (historico.size() > 10) {
+                historico.remove(0);
+            }
         }
     }
 
@@ -406,6 +452,7 @@ public class Jogo extends Thread {
             if (partidaIniciada && !jogoFinalizado) {
                 atualizar();
                 atualizarTempo();
+                coletarDadosSensores();
             }
             try {
                 Thread.sleep(16);

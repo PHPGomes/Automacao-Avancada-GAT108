@@ -11,6 +11,10 @@ public class Alvo extends Thread {
     private long lastMove;
     private GameView gameView;
     private int desX, desY;
+    private double vx;
+    private double vy;
+    private int ultimoX;
+    private int ultimoY;
     protected Paint paint;
     private boolean running = true;
     private Lado lado;
@@ -60,6 +64,10 @@ public class Alvo extends Thread {
             if (desY > y) y = Math.min(y + vel, desY);
             else if (desY < y) y = Math.max(y - vel, desY);
         }
+        vx = x - ultimoX;
+        vy = y - ultimoY;
+        ultimoX = x;
+        ultimoY = y;
 
         if (x == desX && y == desY) {
             Atualizadestino();
@@ -71,23 +79,6 @@ public class Alvo extends Thread {
         }
         verificarMudancaDeLado();
     }
-
-    public int getX() { return x; }
-    public int getY() { return y; }
-    public int getTamX() { return tamX; }
-    public int getTamY() { return tamY; }
-    public Lado getLado() { return lado; }
-
-    public boolean getRunning() { return running; }
-    public boolean getRuning() { return running; }
-
-    public int getRaio() { return raio; }
-    public GameView getGameView() { return gameView; }
-
-    public synchronized void draw(Canvas canvas) {
-        canvas.drawCircle(x, y, raio, paint);
-    }
-
     public synchronized void verificarMudancaDeLado() {
 
         Lado ladoAnterior = lado;
@@ -108,6 +99,35 @@ public class Alvo extends Thread {
 
             System.out.println("Alvo mudou para: " + lado);
         }
+    }
+
+    private double ruidoGaussiano(double valor) {
+        double desvio = Math.abs(valor * 0.05);
+        return random.nextGaussian() * desvio;
+    }
+
+    public synchronized LeituraSensor gerarLeitura() {
+        double leituraX = x + ruidoGaussiano(x);
+        double leituraY = y + ruidoGaussiano(y);
+        double leituraVx = vx + ruidoGaussiano(vx);
+        double leituraVy = vy + ruidoGaussiano(vy);
+        return new LeituraSensor(leituraX,leituraY,leituraVx,leituraVy);
+    }
+
+    public int getX() { return x; }
+    public int getY() { return y; }
+    public int getTamX() { return tamX; }
+    public int getTamY() { return tamY; }
+    public Lado getLado() { return lado; }
+
+    public boolean getRunning() { return running; }
+    public boolean getRuning() { return running; }
+
+    public int getRaio() { return raio; }
+    public GameView getGameView() { return gameView; }
+
+    public synchronized void draw(Canvas canvas) {
+        canvas.drawCircle(x, y, raio, paint);
     }
 
     public void parar() {
