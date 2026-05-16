@@ -134,7 +134,18 @@ public class Jogo extends Thread {
                 return;
             }
 
-            int x = 100 + random.nextInt(gameView.getWidth() - 200);
+            int metade = gameView.getWidth() / 2;
+            boolean ladoEsquerdo = random.nextBoolean();
+            int margem = 80;
+            int x;
+            if (ladoEsquerdo) {
+
+                x = margem + random.nextInt(metade - margem - 80);
+
+            } else {
+
+                x = metade + 80 + random.nextInt(metade - margem - 80);
+            }
             int y = 100 + random.nextInt(gameView.getHeight() - 200);
 
             if (x < 0 || x > gameView.getWidth() || y < 0 || y > gameView.getHeight()) {

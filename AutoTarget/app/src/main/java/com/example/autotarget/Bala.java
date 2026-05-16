@@ -12,7 +12,7 @@ public class Bala extends Thread {
     private boolean running = true;
     private GameView gameView;
     private Canhao canhaoAtirador; // Referência ao canhão que disparou a bala
-
+    private Lado lado;
     private int x, y, size, xAlvo, yAlvo, vel;
     private long lastMove;
     private boolean ativa;
@@ -45,6 +45,7 @@ public class Bala extends Thread {
 
         this.gameView = gameView;
         this.canhaoAtirador = canhaoAtirador; // Armazena a referência do canhão atirador
+        this.lado = canhaoAtirador.getLado();
         size = 12;
         lastMove = 0;
         vel = 10;
@@ -76,6 +77,13 @@ public class Bala extends Thread {
             lastMove = System.currentTimeMillis();
             x += dx * vel;
             y += dy * vel;
+        }
+        int metade = gameView.getWidth() / 2;
+        if (lado == Lado.ESQUERDO && x > metade) {
+            parar();
+        }
+        if (lado == Lado.DIREITO && x < metade) {
+            parar();
         }
         // sair da tela → remove bala
         if (gameView != null && (x < 0 || x > gameView.getWidth() || y < 0 || y > gameView.getHeight())) {

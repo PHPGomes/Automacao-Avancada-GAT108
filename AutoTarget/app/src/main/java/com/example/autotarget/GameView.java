@@ -33,9 +33,15 @@ public class GameView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        canvas.drawColor(Color.DKGRAY);
+        //canvas.drawColor(Color.DKGRAY);
         line.setColor(Color.BLACK);
         line.setStrokeWidth(5);
+        Paint ladoEsquerdo = new Paint();
+        ladoEsquerdo.setColor(Color.rgb(180, 220, 255));
+        Paint ladoDireito = new Paint();
+        ladoDireito.setColor(Color.rgb(255, 200, 200));
+        canvas.drawRect(0, 0, getWidth()/2, getHeight(), ladoEsquerdo);
+        canvas.drawRect(getWidth()/2, 0, getWidth(), getHeight(), ladoDireito);
         canvas.drawLine(getWidth() / 2, 0, getWidth() / 2, getHeight(), line);
         texto1.setColor(Color.BLACK);
         texto1.setTextSize(60);

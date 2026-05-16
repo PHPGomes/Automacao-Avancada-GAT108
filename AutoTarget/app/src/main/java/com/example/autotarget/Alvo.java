@@ -13,12 +13,18 @@ public class Alvo extends Thread {
     private int desX, desY;
     protected Paint paint;
     private boolean running = true;
+    private Lado lado;
 
     Random random = new Random();
 
     public Alvo(int x, int y, int tamX, int tamY, GameView gameView, int vel) {
         this.x = x;
         this.y = y;
+        if (x < tamX / 2) {
+            lado = Lado.ESQUERDO;
+        } else {
+            lado = Lado.DIREITO;
+        }
         this.tamX = tamX;
         this.tamY = tamY;
         this.gameView = gameView;
@@ -61,12 +67,14 @@ public class Alvo extends Thread {
             x = Math.max(raio, Math.min(x, tamX - raio));
             y = Math.max(raio, Math.min(y, tamY - raio));
         }
+        verificarMudancaDeLado();
     }
 
     public int getX() { return x; }
     public int getY() { return y; }
     public int getTamX() { return tamX; }
     public int getTamY() { return tamY; }
+    public Lado getLado() { return lado; }
 
     public boolean getRunning() { return running; }
     public boolean getRuning() { return running; }
@@ -76,6 +84,21 @@ public class Alvo extends Thread {
 
     public synchronized void draw(Canvas canvas) {
         canvas.drawCircle(x, y, raio, paint);
+    }
+
+    public synchronized void verificarMudancaDeLado() {
+
+        Lado ladoAnterior = lado;
+
+        if (x < tamX / 2) {
+            lado = Lado.ESQUERDO;
+        } else {
+            lado = Lado.DIREITO;
+        }
+
+        if (ladoAnterior != lado) {
+            System.out.println("Alvo mudou para: " + lado);
+        }
     }
 
     public void parar() {

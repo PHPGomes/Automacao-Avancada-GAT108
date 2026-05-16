@@ -10,7 +10,7 @@ public class AlvoRapido extends Alvo{
 
 
     public AlvoRapido(int x, int y, int tamX, int tamY, GameView gameView){
-        super(x, y, tamX, tamY, gameView,12);
+        super(x, y, tamX, tamY, gameView,8);
         paint.setColor(Color.RED);
     }
 

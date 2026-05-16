@@ -18,6 +18,7 @@ public class Canhao extends Thread {
     private long ultimoTiro;
     private int delayTiros;
     private Jogo jogo;
+    private Lado lado;
 
     public Canhao(int x, int y, GameView gameView, Jogo jogo) {
         this.x = x;
@@ -25,6 +26,11 @@ public class Canhao extends Thread {
         this.size = 60;
         this.gameView = gameView;
         this.jogo = jogo;
+        if (x < gameView.getWidth() / 2) {
+            lado = Lado.ESQUERDO;
+        } else {
+            lado = Lado.DIREITO;
+        }
         numBalas = 25;
         ultimoTiro = 0;
         delayTiros = 1500;
@@ -82,7 +88,8 @@ public class Canhao extends Thread {
         double menorDistancia = Double.MAX_VALUE;
 
         for (Alvo alvo : alvos) {
-            if (!alvo.getRunning()) continue; // Só atira em alvos ativos
+            if (!alvo.getRunning()) continue;
+            if (alvo.getLado() != lado) continue;
 
             double dx = alvo.getX() - x;
             double dy = alvo.getY() - y;
@@ -98,6 +105,9 @@ public class Canhao extends Thread {
 
     public int getX() {
         return x;
+    }
+    public Lado getLado() {
+        return lado;
     }
 
     @Override
