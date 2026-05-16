@@ -378,7 +378,8 @@ public class Jogo extends Thread {
     public List<Bala> getBalas() {
         return balas;
     }
-
+    public List<Canhao> getCanhoesEsquerda() { return canhoesEsquerda; }
+    public List<Canhao> getCanhoesDireita() { return canhoesDireita; }
     public int getPontuacao1() {
         return pontuacao1;
     }

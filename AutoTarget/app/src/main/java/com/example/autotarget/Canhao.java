@@ -16,9 +16,11 @@ public class Canhao extends Thread {
     private boolean running = true;
     private GameView gameView;
     private long ultimoTiro;
-    private int delayTiros;
     private Jogo jogo;
     private Lado lado;
+    private int delayTiros;
+    private static final int LIMITE_CANHOES = 5;
+    private static final int DELAY_BASE = 1500;
 
     public Canhao(int x, int y, GameView gameView, Jogo jogo) {
         this.x = x;
@@ -26,6 +28,7 @@ public class Canhao extends Thread {
         this.size = 60;
         this.gameView = gameView;
         this.jogo = jogo;
+        delayTiros = DELAY_BASE;
         if (x < gameView.getWidth() / 2) {
             lado = Lado.ESQUERDO;
         } else {
@@ -33,7 +36,6 @@ public class Canhao extends Thread {
         }
         numBalas = 25;
         ultimoTiro = 0;
-        delayTiros = 1500;
 
         paint = new Paint();
         paint.setColor(Color.BLUE);
@@ -114,24 +116,19 @@ public class Canhao extends Thread {
 
     private int calcularDelay() {
 
-        int quantidade = 0;
+        int quantidade;
+        if (lado == Lado.ESQUERDO) {
+            quantidade = jogo.getCanhoesEsquerda().size();
 
-        for (Canhao c : jogo.getCanhoes()) {
-
-            if (c.getLado() == lado) {
-                quantidade++;
-            }
+        } else {
+            quantidade = jogo.getCanhoesDireita().size();
         }
-
-        int limite = 3;
-
-        if (quantidade <= limite) {
-            return 1500;
+        if (quantidade <= LIMITE_CANHOES) {
+            return DELAY_BASE;
         }
-
-        int excesso = quantidade - limite;
-
-        return 1500 + (excesso * 500);
+        int excesso = quantidade - LIMITE_CANHOES;
+        double fator = 1 + (excesso * 0.2);
+        return (int)(DELAY_BASE * fator);
     }
 
     public int getX() {
