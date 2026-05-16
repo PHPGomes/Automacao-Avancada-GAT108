@@ -9,8 +9,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Jogo extends Thread {
 
-    private List<Canhao> canhoes;
-    private List<Alvo> alvos;
+    private List<Canhao> canhoesEsquerda;
+    private List<Canhao> canhoesDireita;
+    private List<Alvo> alvosEsquerda;
+    private List<Alvo> alvosDireita;
     private List<Bala> balas;
 
     private int pontuacao1, pontuacao2;
@@ -27,8 +29,10 @@ public class Jogo extends Thread {
 
     public Jogo(GameView gameView) {
         this.gameView = gameView;
-        canhoes = new CopyOnWriteArrayList<>();
-        alvos = new CopyOnWriteArrayList<>();
+        canhoesEsquerda = new CopyOnWriteArrayList<>();
+        canhoesDireita = new CopyOnWriteArrayList<>();
+        alvosEsquerda = new CopyOnWriteArrayList<>();
+        alvosDireita = new CopyOnWriteArrayList<>();
         balas = new CopyOnWriteArrayList<>();
         numAlvos = 5;
     }
@@ -39,26 +43,70 @@ public class Jogo extends Thread {
     }
 
     private void verificarColisoes() {
-        for (Alvo a : alvos) {
+        for (Alvo a : alvosEsquerda) {
+
             if (a == null || !a.getRunning()) continue;
 
             for (Bala b : balas) {
+
                 if (b == null || !b.getRunning()) continue;
 
                 synchronized (a) {
+
                     if (!a.getRunning() || !b.getRunning()) continue;
 
                     int dx = b.getX() - a.getX();
                     int dy = b.getY() - a.getY();
+
                     double distancia = Math.sqrt(dx * dx + dy * dy);
 
                     if (distancia < a.getRaio()) {
+
                         a.parar();
                         b.parar();
 
                         Canhao canhaoAtirador = b.getCanhaoAtirador();
+
                         if (canhaoAtirador != null) {
-                            if (canhaoAtirador.getX() < gameView.getWidth() / 2) {
+
+                            if (canhaoAtirador.getLado() == Lado.ESQUERDO) {
+                                pontuacao1++;
+                            } else {
+                                pontuacao2++;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        for (Alvo a : alvosDireita) {
+
+            if (a == null || !a.getRunning()) continue;
+
+            for (Bala b : balas) {
+
+                if (b == null || !b.getRunning()) continue;
+
+                synchronized (a) {
+
+                    if (!a.getRunning() || !b.getRunning()) continue;
+
+                    int dx = b.getX() - a.getX();
+                    int dy = b.getY() - a.getY();
+
+                    double distancia = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distancia < a.getRaio()) {
+
+                        a.parar();
+                        b.parar();
+
+                        Canhao canhaoAtirador = b.getCanhaoAtirador();
+
+                        if (canhaoAtirador != null) {
+
+                            if (canhaoAtirador.getLado() == Lado.ESQUERDO) {
                                 pontuacao1++;
                             } else {
                                 pontuacao2++;
@@ -73,7 +121,8 @@ public class Jogo extends Thread {
     private void removerMortos() {
         try {
             semaforoAlvos.acquire();
-            alvos.removeIf(a -> !a.getRunning());
+            alvosEsquerda.removeIf(a -> !a.getRunning());
+            alvosDireita.removeIf(a -> !a.getRunning());
             semaforoAlvos.release();
 
             semaforoBalas.acquire();
@@ -81,7 +130,8 @@ public class Jogo extends Thread {
             semaforoBalas.release();
 
             semaforoCanhoes.acquire();
-            canhoes.removeIf(c -> !c.getRunning()); // Remove canhões que pararam (sem balas)
+            canhoesEsquerda.removeIf(c -> !c.getRunning());
+            canhoesDireita.removeIf(c -> !c.getRunning());
             semaforoCanhoes.release();
 
         } catch (InterruptedException e) {
@@ -115,11 +165,15 @@ public class Jogo extends Thread {
             for (int c = 0; c < numAlvos; c++) {
                 Alvo a;
                 if (random.nextInt(100) < 70) {
-                    a = new AlvoComum(gameView.getWidth() / 2, gameView.getHeight() / 2, gameView.getWidth(), gameView.getHeight(), gameView);
+                    a = new AlvoComum(gameView.getWidth() / 2, gameView.getHeight() / 2, gameView.getWidth(), gameView.getHeight(), gameView,this);
                 } else {
-                    a = new AlvoRapido(gameView.getWidth() / 2, gameView.getHeight() / 2, gameView.getWidth(), gameView.getHeight(), gameView);
+                    a = new AlvoRapido(gameView.getWidth() / 2, gameView.getHeight() / 2, gameView.getWidth(), gameView.getHeight(), gameView,this);
                 }
-                alvos.add(a);
+                if (a.getLado() == Lado.ESQUERDO) {
+                    alvosEsquerda.add(a);
+                } else {
+                    alvosDireita.add(a);
+                }
                 a.start();
             }
             numAlvos += 5;
@@ -163,7 +217,11 @@ public class Jogo extends Thread {
 
             semaforoCanhoes.acquire();
             Canhao novoCanhao = new Canhao(x, y, gameView, this);
-            canhoes.add(novoCanhao);
+            if (novoCanhao.getLado() == Lado.ESQUERDO) {
+                canhoesEsquerda.add(novoCanhao);
+            } else {
+                canhoesDireita.add(novoCanhao);
+            }
             novoCanhao.start();
             semaforoCanhoes.release();
 
@@ -174,33 +232,58 @@ public class Jogo extends Thread {
         }
     }
 
-    private void consumirEnergia() {
+    public List<Alvo> getAlvosPorLado(Lado lado) {
 
-        int canhoesEsquerda = 0;
-        int canhoesDireita = 0;
-
-        for (Canhao c : canhoes) {
-
-            if (c.getLado() == Lado.ESQUERDO) {
-                canhoesEsquerda++;
-            } else {
-                canhoesDireita++;
-            }
+        if (lado == Lado.ESQUERDO) {
+            return alvosEsquerda;
         }
 
-        energiaEsquerda -= canhoesEsquerda * 0.05;
-        energiaDireita -= canhoesDireita * 0.05;
+        return alvosDireita;
+    }
+
+    private void consumirEnergia() {
+
+        int canhoesEsquerdaAtivos = canhoesEsquerda.size();
+        int canhoesDireitaAtivos = canhoesDireita.size();
+
+        energiaEsquerda -= canhoesEsquerdaAtivos * 0.05;
+        energiaDireita -= canhoesDireitaAtivos * 0.05;
 
         energiaEsquerda = Math.max(0, energiaEsquerda);
         energiaDireita = Math.max(0, energiaDireita);
     }
 
+    public synchronized void transferirAlvo(Alvo alvo, Lado novoLado) {
+
+        if (novoLado == Lado.ESQUERDO) {
+
+            alvosDireita.remove(alvo);
+
+            if (!alvosEsquerda.contains(alvo)) {
+                alvosEsquerda.add(alvo);
+            }
+
+        } else {
+
+            alvosEsquerda.remove(alvo);
+
+            if (!alvosDireita.contains(alvo)) {
+                alvosDireita.add(alvo);
+            }
+        }
+    }
     public List<Canhao> getCanhoes() {
-        return canhoes;
+        List<Canhao> todos = new ArrayList<>();
+        todos.addAll(canhoesEsquerda);
+        todos.addAll(canhoesDireita);
+        return todos;
     }
 
     public List<Alvo> getAlvos() {
-        return alvos;
+        List<Alvo> todos = new ArrayList<>();
+        todos.addAll(alvosEsquerda);
+        todos.addAll(alvosDireita);
+        return todos;
     }
 
     public List<Bala> getBalas() {
@@ -219,9 +302,10 @@ public class Jogo extends Thread {
 
     public void parar() {
         running = false;
-
-        for (Alvo a : alvos) a.parar();
-        for (Canhao c : canhoes) c.parar();
+        for (Alvo a : alvosEsquerda) a.parar();
+        for (Alvo a : alvosDireita) a.parar();
+        for (Canhao c : canhoesEsquerda) c.parar();
+        for (Canhao c : canhoesDireita) c.parar();
         for (Bala b : balas) b.parar();
     }
 

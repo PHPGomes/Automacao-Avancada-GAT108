@@ -91,7 +91,7 @@ public class Canhao extends Thread {
     }
 
     private Alvo escolherAlvo() {
-        List<Alvo> alvos = jogo.getAlvos();
+        List<Alvo> alvos = jogo.getAlvosPorLado(lado);
         if (alvos.isEmpty()) return null;
 
         Alvo alvoEscolhido = null;

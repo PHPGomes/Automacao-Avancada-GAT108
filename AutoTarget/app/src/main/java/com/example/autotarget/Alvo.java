@@ -14,10 +14,11 @@ public class Alvo extends Thread {
     protected Paint paint;
     private boolean running = true;
     private Lado lado;
+    private Jogo jogo;
 
     Random random = new Random();
 
-    public Alvo(int x, int y, int tamX, int tamY, GameView gameView, int vel) {
+    public Alvo(int x, int y, int tamX, int tamY, GameView gameView,Jogo jogo, int vel) {
         this.x = x;
         this.y = y;
         if (x < tamX / 2) {
@@ -30,6 +31,7 @@ public class Alvo extends Thread {
         this.gameView = gameView;
         this.raio = 30;
         this.vel = vel;
+        this.jogo = jogo;
         lastMove = 0;
 
         paint = new Paint();
@@ -97,6 +99,13 @@ public class Alvo extends Thread {
         }
 
         if (ladoAnterior != lado) {
+            System.out.println("Alvo mudou para: " + lado);
+        }
+
+        if (ladoAnterior != lado) {
+
+            jogo.transferirAlvo(this, lado);
+
             System.out.println("Alvo mudou para: " + lado);
         }
     }
