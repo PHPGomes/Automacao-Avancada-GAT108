@@ -20,8 +20,14 @@ public class Jogo extends Thread {
     private boolean running = true;
     private GameView gameView;
     private Random random = new Random();
-    private double energiaEsquerda = 1000;
-    private double energiaDireita = 1000;
+    private int iniEnergiaEsquerda = 1000;
+    private int iniEnergiaDireita = 1000;
+    private int energiaEsquerda;
+    private int energiaDireita;
+    private int tempoRestante = 60;
+    private long ultimoSegundo;
+    private boolean jogoFinalizado = false;
+    private boolean partidaIniciada = false;
 
     private Semaphore semaforoAlvos = new Semaphore(1);
     private Semaphore semaforoBalas = new Semaphore(1);
@@ -35,11 +41,32 @@ public class Jogo extends Thread {
         alvosDireita = new CopyOnWriteArrayList<>();
         balas = new CopyOnWriteArrayList<>();
         numAlvos = 5;
+        energiaEsquerda = iniEnergiaEsquerda;
+        energiaDireita = iniEnergiaDireita;
     }
 
     public void atualizar() {
         verificarColisoes();
         removerMortos();
+        if (!jogoFinalizado && getAlvos().isEmpty()) {
+            iniciarJogo();
+        }
+    }
+
+
+    private void atualizarTempo() {
+
+        if (System.currentTimeMillis() - ultimoSegundo >= 1000) {
+
+            tempoRestante--;
+
+            ultimoSegundo = System.currentTimeMillis();
+
+            if (tempoRestante <= 0) {
+
+                finalizarJogo();
+            }
+        }
     }
 
     private void verificarColisoes() {
@@ -153,6 +180,7 @@ public class Jogo extends Thread {
 
     public void iniciarJogo() {
         try {
+            partidaIniciada = true;
             semaforoAlvos.acquire();
             // Garante que o GameView tenha dimensões válidas antes de criar alvos
             if (gameView.getWidth() == 0 || gameView.getHeight() == 0) {
@@ -160,8 +188,8 @@ public class Jogo extends Thread {
                 semaforoAlvos.release();
                 return;
             }
-            energiaEsquerda = 1000;
-            energiaDireita = 1000;
+                energiaEsquerda = iniEnergiaEsquerda;
+                energiaDireita = iniEnergiaDireita;
             for (int c = 0; c < numAlvos; c++) {
                 Alvo a;
                 if (random.nextInt(100) < 70) {
@@ -272,6 +300,22 @@ public class Jogo extends Thread {
             }
         }
     }
+    private void finalizarJogo() {
+
+        jogoFinalizado = true;
+
+        for (Alvo a : getAlvos()) {
+            a.parar();
+        }
+
+        for (Canhao c : getCanhoes()) {
+            c.parar();
+        }
+
+        for (Bala b : balas) {
+            b.parar();
+        }
+    }
     public List<Canhao> getCanhoes() {
         List<Canhao> todos = new ArrayList<>();
         todos.addAll(canhoesEsquerda);
@@ -293,7 +337,8 @@ public class Jogo extends Thread {
     public int getPontuacao1() {
         return pontuacao1;
     }
-
+    public int getTempoRestante() { return tempoRestante; }
+    public boolean isJogoFinalizado() { return jogoFinalizado; }
     public int getPontuacao2() {
         return pontuacao2;
     }
@@ -312,8 +357,11 @@ public class Jogo extends Thread {
     @Override
     public void run() {
         while (running) {
-            atualizar();
-            consumirEnergia();
+            if (partidaIniciada && !jogoFinalizado) {
+                atualizar();
+                consumirEnergia();
+                atualizarTempo();
+            }
             try {
                 Thread.sleep(16);
             } catch (InterruptedException e) {
