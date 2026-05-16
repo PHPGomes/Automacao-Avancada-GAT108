@@ -22,19 +22,15 @@ public class Canhao extends Thread {
     private static final int LIMITE_CANHOES = 5;
     private static final int DELAY_BASE = 1500;
 
-    public Canhao(int x, int y, GameView gameView, Jogo jogo) {
+    public Canhao(int x, int y, GameView gameView, Jogo jogo,Lado lado) {
         this.x = x;
         this.y = y;
         this.size = 60;
         this.gameView = gameView;
         this.jogo = jogo;
         delayTiros = DELAY_BASE;
-        if (x < gameView.getWidth() / 2) {
-            lado = Lado.ESQUERDO;
-        } else {
-            lado = Lado.DIREITO;
-        }
-        numBalas = 25;
+        this.lado = lado;
+        numBalas = 5;
         ultimoTiro = 0;
 
         paint = new Paint();

@@ -16,14 +16,22 @@ public class MainActivity extends AppCompatActivity {
 
         gameView = findViewById(R.id.gameView);
         Button btnIniciar = findViewById(R.id.btnIniciar);
-        Button btnAdicionar = findViewById(R.id.btnAdicionar);
+        Button btnAdicionarEsquerda =
+                findViewById(R.id.btnAdicionarEsquerda);
+
+        Button btnAdicionarDireita =
+                findViewById(R.id.btnAdicionarDireita);
 
         btnIniciar.setOnClickListener(v -> {
             gameView.iniciarJogo(); //
         });
 
-        btnAdicionar.setOnClickListener(v -> {
-            gameView.adicionarCanhao();
+        btnAdicionarEsquerda.setOnClickListener(v -> {
+            gameView.adicionarCanhao(Lado.ESQUERDO);
+        });
+
+        btnAdicionarDireita.setOnClickListener(v -> {
+            gameView.adicionarCanhao(Lado.DIREITO);
         });
     }
 }

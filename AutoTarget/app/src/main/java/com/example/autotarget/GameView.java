@@ -50,7 +50,7 @@ public class GameView extends View {
         canvas.drawText("Pontos: " + jogo.getPontuacao2(), 590, 80, texto2);
         canvas.drawText("Energia: " + (int) jogo.getEnergiaEsquerda(),50,150,texto1);
         canvas.drawText("Energia: " + (int) jogo.getEnergiaDireita(),590,150,texto2);
-        canvas.drawText("Tempo: " + jogo.getTempoRestante(),getWidth()/2 - 400,getHeight() - 200,texto1);
+        canvas.drawText("Tempo: " + jogo.getTempoRestante(),getWidth()/2 - 460,getHeight() - 200,texto1);
 
         for (Canhao c : jogo.getCanhoes()) {
             c.draw(canvas);
@@ -72,17 +72,19 @@ public class GameView extends View {
             String texto;
             if (jogo.getPontuacao1() > jogo.getPontuacao2()) {
                 texto = "ESQUERDA VENCEU";
+                canvas.drawText(texto,getWidth()/2 - 440,getHeight()/2,vencedor);
             } else if (jogo.getPontuacao2() > jogo.getPontuacao1()) {
                 texto = "DIREITA VENCEU";
+                canvas.drawText(texto,getWidth()/2 - 380,getHeight()/2,vencedor);
             } else {
                 texto = "EMPATE";
+                canvas.drawText(texto,getWidth()/2 - 205,getHeight()/2,vencedor);
             }
-            canvas.drawText(texto,getWidth()/2 - 350,getHeight()/2,vencedor);
         }
     }
 
-    public void adicionarCanhao() {
-        jogo.adicionarCanhao();
+    public void adicionarCanhao(Lado lado) {
+        jogo.adicionarCanhao(lado);
         invalidate();
     }
     public void iniciarJogo() {

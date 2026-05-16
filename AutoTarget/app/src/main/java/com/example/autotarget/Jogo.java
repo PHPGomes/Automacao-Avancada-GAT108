@@ -28,7 +28,8 @@ public class Jogo extends Thread {
     private int iniEnergiaDireita = 100;
     private int energiaEsquerda;
     private int energiaDireita;
-    private int tempoRestante = 60;
+    private int tempoRestante;
+    private int tempoInicial = 60;
     private long ultimoSegundo;
     private long ultimaColeta;
     private boolean jogoFinalizado = false;
@@ -279,7 +280,7 @@ public class Jogo extends Thread {
         pontuacao1 = 0;
         pontuacao2 = 0;
 
-        tempoRestante = 60;
+        tempoRestante = tempoInicial;
 
         jogoFinalizado = false;
 
@@ -313,7 +314,7 @@ public class Jogo extends Thread {
         balas.clear();
     }
 
-    public void adicionarCanhao() {
+    public void adicionarCanhao(Lado lado) {
         try {
             // Garante que o GameView tenha dimensões válidas antes de adicionar canhão
             if (gameView.getWidth() == 0 || gameView.getHeight() == 0) {
@@ -322,10 +323,9 @@ public class Jogo extends Thread {
             }
 
             int metade = gameView.getWidth() / 2;
-            boolean ladoEsquerdo = random.nextBoolean();
             int margem = 80;
             int x;
-            if (ladoEsquerdo) {
+            if (lado == Lado.ESQUERDO) {
 
                 x = margem + random.nextInt(metade - margem - 80);
 
@@ -333,10 +333,10 @@ public class Jogo extends Thread {
 
                 x = metade + 80 + random.nextInt(metade - margem - 80);
             }
-            if (ladoEsquerdo && energiaEsquerda <= 0) {
+            if (lado == Lado.ESQUERDO && energiaEsquerda <= 0) {
                 return;
             }
-            if (!ladoEsquerdo && energiaDireita <= 0) {
+            if (lado == Lado.DIREITO && energiaDireita <= 0) {
                 return;
             }
             int y = 100 + random.nextInt(gameView.getHeight() - 200);
@@ -346,7 +346,7 @@ public class Jogo extends Thread {
             }
 
             semaforoCanhoes.acquire();
-            Canhao novoCanhao = new Canhao(x, y, gameView, this);
+            Canhao novoCanhao = new Canhao(x, y, gameView, this,lado);
             if (novoCanhao.getLado() == Lado.ESQUERDO) {
                 canhoesEsquerda.add(novoCanhao);
             } else {
