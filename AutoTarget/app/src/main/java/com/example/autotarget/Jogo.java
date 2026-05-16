@@ -486,6 +486,7 @@ public class Jogo extends Thread {
                 atualizar();
                 atualizarTempo();
                 coletarDadosSensores();
+                atualizarMatrizIncidencia();
             }
             try {
                 Thread.sleep(16);

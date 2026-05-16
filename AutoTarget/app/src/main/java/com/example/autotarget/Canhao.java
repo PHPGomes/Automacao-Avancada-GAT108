@@ -33,7 +33,7 @@ public class Canhao extends Thread {
         this.lado = lado;
         numBalas = 5;
         ultimoTiro = 0;
-        capacidade = 1.0 / calcularDelay();
+        capacidade = 1000.0 / calcularDelay();
 
         paint = new Paint();
         paint.setColor(Color.BLUE);
@@ -139,6 +139,10 @@ public class Canhao extends Thread {
 
     public Lado getLado() {
         return lado;
+    }
+    public double getCapacidade() {
+        capacidade = 1000.0 / calcularDelay();
+        return capacidade;
     }
 
     @Override

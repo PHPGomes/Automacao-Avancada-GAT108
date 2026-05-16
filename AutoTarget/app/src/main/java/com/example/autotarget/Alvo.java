@@ -127,6 +127,7 @@ public class Alvo extends Thread {
 
     public int getRaio() { return raio; }
     public GameView getGameView() { return gameView; }
+    public double getDemanda() { return demanda; }
 
     public synchronized void draw(Canvas canvas) {
         canvas.drawCircle(x, y, raio, paint);
