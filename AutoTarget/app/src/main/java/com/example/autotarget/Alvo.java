@@ -13,6 +13,7 @@ public class Alvo extends Thread {
     private int desX, desY;
     private double vx;
     private double vy;
+    private double demanda;
     private int ultimoX;
     private int ultimoY;
     protected Paint paint;
@@ -37,6 +38,7 @@ public class Alvo extends Thread {
         this.vel = vel;
         this.jogo = jogo;
         lastMove = 0;
+        demanda = vel/10;
 
         paint = new Paint();
         paint.setStyle(Paint.Style.FILL);

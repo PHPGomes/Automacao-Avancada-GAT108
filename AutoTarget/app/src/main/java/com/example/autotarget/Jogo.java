@@ -34,6 +34,7 @@ public class Jogo extends Thread {
     private long ultimaColeta;
     private boolean jogoFinalizado = false;
     private boolean partidaIniciada = false;
+    private double[][] matrizIncidencia;
 
     private Semaphore semaforoAlvos = new Semaphore(1);
     private Semaphore semaforoBalas = new Semaphore(1);
@@ -312,6 +313,38 @@ public class Jogo extends Thread {
         canhoesDireita.clear();
 
         balas.clear();
+    }
+
+    private void atualizarMatrizIncidencia() {
+
+        List<Alvo> alvos = getAlvos();
+
+        List<Canhao> canhoes = getCanhoes();
+
+        matrizIncidencia =
+                new double[alvos.size()][canhoes.size()];
+
+        for (int i = 0; i < alvos.size(); i++) {
+
+            Alvo alvo = alvos.get(i);
+
+            for (int j = 0; j < canhoes.size(); j++) {
+
+                Canhao canhao = canhoes.get(j);
+
+                double dx =
+                        alvo.getX() - canhao.getX();
+
+                double dy =
+                        alvo.getY() - canhao.getY();
+
+                double distancia =
+                        Math.sqrt(dx*dx + dy*dy);
+
+                matrizIncidencia[i][j] =
+                        1.0 / (distancia + 1);
+            }
+        }
     }
 
     public void adicionarCanhao(Lado lado) {

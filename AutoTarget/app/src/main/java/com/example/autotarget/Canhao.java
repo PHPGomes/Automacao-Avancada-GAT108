@@ -19,6 +19,7 @@ public class Canhao extends Thread {
     private Jogo jogo;
     private Lado lado;
     private int delayTiros;
+    private double capacidade;
     private static final int LIMITE_CANHOES = 5;
     private static final int DELAY_BASE = 1500;
 
@@ -32,6 +33,7 @@ public class Canhao extends Thread {
         this.lado = lado;
         numBalas = 5;
         ultimoTiro = 0;
+        capacidade = 1.0 / calcularDelay();
 
         paint = new Paint();
         paint.setColor(Color.BLUE);
@@ -130,6 +132,11 @@ public class Canhao extends Thread {
     public int getX() {
         return x;
     }
+
+    public int getY() {
+        return y;
+    }
+
     public Lado getLado() {
         return lado;
     }
