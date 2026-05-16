@@ -18,6 +18,8 @@ public class Jogo extends Thread {
     private boolean running = true;
     private GameView gameView;
     private Random random = new Random();
+    private double energiaEsquerda = 1000;
+    private double energiaDireita = 1000;
 
     private Semaphore semaforoAlvos = new Semaphore(1);
     private Semaphore semaforoBalas = new Semaphore(1);
@@ -108,7 +110,8 @@ public class Jogo extends Thread {
                 semaforoAlvos.release();
                 return;
             }
-
+            energiaEsquerda = 1000;
+            energiaDireita = 1000;
             for (int c = 0; c < numAlvos; c++) {
                 Alvo a;
                 if (random.nextInt(100) < 70) {
@@ -146,6 +149,12 @@ public class Jogo extends Thread {
 
                 x = metade + 80 + random.nextInt(metade - margem - 80);
             }
+            if (ladoEsquerdo && energiaEsquerda <= 0) {
+                return;
+            }
+            if (!ladoEsquerdo && energiaDireita <= 0) {
+                return;
+            }
             int y = 100 + random.nextInt(gameView.getHeight() - 200);
 
             if (x < 0 || x > gameView.getWidth() || y < 0 || y > gameView.getHeight()) {
@@ -163,6 +172,27 @@ public class Jogo extends Thread {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    private void consumirEnergia() {
+
+        int canhoesEsquerda = 0;
+        int canhoesDireita = 0;
+
+        for (Canhao c : canhoes) {
+
+            if (c.getLado() == Lado.ESQUERDO) {
+                canhoesEsquerda++;
+            } else {
+                canhoesDireita++;
+            }
+        }
+
+        energiaEsquerda -= canhoesEsquerda * 0.05;
+        energiaDireita -= canhoesDireita * 0.05;
+
+        energiaEsquerda = Math.max(0, energiaEsquerda);
+        energiaDireita = Math.max(0, energiaDireita);
     }
 
     public List<Canhao> getCanhoes() {
@@ -184,6 +214,8 @@ public class Jogo extends Thread {
     public int getPontuacao2() {
         return pontuacao2;
     }
+    public double getEnergiaEsquerda() { return energiaEsquerda; }
+    public double getEnergiaDireita() { return energiaDireita; }
 
     public void parar() {
         running = false;
@@ -197,6 +229,7 @@ public class Jogo extends Thread {
     public void run() {
         while (running) {
             atualizar();
+            consumirEnergia();
             try {
                 Thread.sleep(16);
             } catch (InterruptedException e) {

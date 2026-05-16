@@ -55,6 +55,8 @@ public class Canhao extends Thread {
     }
 
     public void atirar() {
+        if (!temEnergia()) return;
+        delayTiros = calcularDelay();
         if (numBalas <= 0) return;
 
         if (System.currentTimeMillis() - ultimoTiro > delayTiros) {
@@ -70,6 +72,14 @@ public class Canhao extends Thread {
             numBalas--;
             ultimoTiro = System.currentTimeMillis();
         }
+    }
+    private boolean temEnergia() {
+
+        if (lado == Lado.ESQUERDO) {
+            return jogo.getEnergiaEsquerda() > 0;
+        }
+
+        return jogo.getEnergiaDireita() > 0;
     }
 
     public boolean getRunning() {
@@ -101,6 +111,28 @@ public class Canhao extends Thread {
             }
         }
         return alvoEscolhido;
+    }
+
+    private int calcularDelay() {
+
+        int quantidade = 0;
+
+        for (Canhao c : jogo.getCanhoes()) {
+
+            if (c.getLado() == lado) {
+                quantidade++;
+            }
+        }
+
+        int limite = 3;
+
+        if (quantidade <= limite) {
+            return 1500;
+        }
+
+        int excesso = quantidade - limite;
+
+        return 1500 + (excesso * 500);
     }
 
     public int getX() {

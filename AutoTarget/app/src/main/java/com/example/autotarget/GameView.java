@@ -33,7 +33,6 @@ public class GameView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        //canvas.drawColor(Color.DKGRAY);
         line.setColor(Color.BLACK);
         line.setStrokeWidth(5);
         Paint ladoEsquerdo = new Paint();
@@ -49,6 +48,8 @@ public class GameView extends View {
         texto2.setTextSize(60);
         canvas.drawText("Pontos: " + jogo.getPontuacao1(), 50, 80, texto1);
         canvas.drawText("Pontos: " + jogo.getPontuacao2(), 590, 80, texto2);
+        canvas.drawText("Energia: " + (int) jogo.getEnergiaEsquerda(),50,150,texto1);
+        canvas.drawText("Energia: " + (int) jogo.getEnergiaDireita(),getWidth() - 450,150,texto2);
 
         for (Canhao c : jogo.getCanhoes()) {
             c.draw(canvas);
