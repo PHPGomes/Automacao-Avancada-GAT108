@@ -49,7 +49,7 @@ public class GameView extends View {
         canvas.drawText("Pontos: " + jogo.getPontuacao1(), 50, 80, texto1);
         canvas.drawText("Pontos: " + jogo.getPontuacao2(), 590, 80, texto2);
         canvas.drawText("Energia: " + (int) jogo.getEnergiaEsquerda(),50,150,texto1);
-        canvas.drawText("Energia: " + (int) jogo.getEnergiaDireita(),getWidth() - 450,150,texto2);
+        canvas.drawText("Energia: " + (int) jogo.getEnergiaDireita(),590,150,texto2);
         canvas.drawText("Tempo: " + jogo.getTempoRestante(),getWidth()/2 - 400,getHeight() - 200,texto1);
 
         for (Canhao c : jogo.getCanhoes()) {
@@ -86,6 +86,6 @@ public class GameView extends View {
         invalidate();
     }
     public void iniciarJogo() {
-        jogo.iniciarJogo();
+        jogo.iniciarPartida();
     }
 }

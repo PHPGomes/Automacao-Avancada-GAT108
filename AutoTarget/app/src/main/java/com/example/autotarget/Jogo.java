@@ -49,7 +49,7 @@ public class Jogo extends Thread {
         verificarColisoes();
         removerMortos();
         if (!jogoFinalizado && getAlvos().isEmpty()) {
-            iniciarJogo();
+            criarOnda();
         }
     }
 
@@ -193,9 +193,8 @@ public class Jogo extends Thread {
         }
     }
 
-    public void iniciarJogo() {
+    public void criarOnda() {
         try {
-            partidaIniciada = true;
             semaforoAlvos.acquire();
             // Garante que o GameView tenha dimensões válidas antes de criar alvos
             if (gameView.getWidth() == 0 || gameView.getHeight() == 0) {
@@ -203,8 +202,6 @@ public class Jogo extends Thread {
                 semaforoAlvos.release();
                 return;
             }
-                energiaEsquerda = iniEnergiaEsquerda;
-                energiaDireita = iniEnergiaDireita;
             for (int c = 0; c < numAlvos; c++) {
                 Alvo a;
                 if (random.nextInt(100) < 70) {
@@ -224,6 +221,50 @@ public class Jogo extends Thread {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    public void iniciarPartida() {
+
+        pararObjetosAtivos();
+
+        energiaEsquerda = iniEnergiaEsquerda;
+        energiaDireita = iniEnergiaDireita;
+
+        pontuacao1 = 0;
+        pontuacao2 = 0;
+
+        tempoRestante = 60;
+
+        jogoFinalizado = false;
+
+        partidaIniciada = true;
+
+        ultimoSegundo = System.currentTimeMillis();
+
+        criarOnda();
+    }
+
+    private void pararObjetosAtivos() {
+
+        for (Alvo a : getAlvos()) {
+            a.parar();
+        }
+
+        for (Canhao c : getCanhoes()) {
+            c.parar();
+        }
+
+        for (Bala b : balas) {
+            b.parar();
+        }
+
+        alvosEsquerda.clear();
+        alvosDireita.clear();
+
+        canhoesEsquerda.clear();
+        canhoesDireita.clear();
+
+        balas.clear();
     }
 
     public void adicionarCanhao() {
