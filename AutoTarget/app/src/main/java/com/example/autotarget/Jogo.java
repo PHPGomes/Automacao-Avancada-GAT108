@@ -20,8 +20,8 @@ public class Jogo extends Thread {
     private boolean running = true;
     private GameView gameView;
     private Random random = new Random();
-    private int iniEnergiaEsquerda = 1000;
-    private int iniEnergiaDireita = 1000;
+    private int iniEnergiaEsquerda = 100;
+    private int iniEnergiaDireita = 100;
     private int energiaEsquerda;
     private int energiaDireita;
     private int tempoRestante = 60;
@@ -67,6 +67,21 @@ public class Jogo extends Thread {
                 finalizarJogo();
             }
         }
+    }
+    public synchronized boolean consumirEnergia(Lado lado) {
+
+        if (lado == Lado.ESQUERDO) {
+            if (energiaEsquerda <= 0) {
+                return false;
+            }
+            energiaEsquerda--;
+            return true;
+        }
+        if (energiaDireita <= 0) {
+            return false;
+        }
+        energiaDireita--;
+        return true;
     }
 
     private void verificarColisoes() {
@@ -269,17 +284,6 @@ public class Jogo extends Thread {
         return alvosDireita;
     }
 
-    private void consumirEnergia() {
-
-        int canhoesEsquerdaAtivos = canhoesEsquerda.size();
-        int canhoesDireitaAtivos = canhoesDireita.size();
-
-        energiaEsquerda -= canhoesEsquerdaAtivos * 0.05;
-        energiaDireita -= canhoesDireitaAtivos * 0.05;
-
-        energiaEsquerda = Math.max(0, energiaEsquerda);
-        energiaDireita = Math.max(0, energiaDireita);
-    }
 
     public synchronized void transferirAlvo(Alvo alvo, Lado novoLado) {
 
@@ -359,7 +363,6 @@ public class Jogo extends Thread {
         while (running) {
             if (partidaIniciada && !jogoFinalizado) {
                 atualizar();
-                consumirEnergia();
                 atualizarTempo();
             }
             try {

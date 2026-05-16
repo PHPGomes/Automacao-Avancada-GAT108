@@ -58,17 +58,16 @@ public class Canhao extends Thread {
         if (!temEnergia()) return;
         delayTiros = calcularDelay();
         if (numBalas <= 0) return;
-
         if (System.currentTimeMillis() - ultimoTiro > delayTiros) {
             Alvo alvo = escolherAlvo();
             if (alvo == null) return;
-
             int aX = alvo.getX();
             int aY = alvo.getY();
-
+            if (!jogo.consumirEnergia(lado)) {
+                return;
+            }
             // Passa 'this' (o próprio canhão) para que a bala saiba quem atirou
             jogo.criarBala(x, y + size, aX, aY, this);
-
             numBalas--;
             ultimoTiro = System.currentTimeMillis();
         }
