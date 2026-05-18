@@ -539,82 +539,302 @@ public class Jogo extends Thread {
             );
         }
     }
+    private double[] reconciliarDistancias(
+            Canhao canhao,
+            List<Alvo> alvos,
+            Map<Alvo, List<LeituraSensor>> buffer
+    ) {
+
+        int n = alvos.size();
+
+        if (n == 0) {
+            return new double[0];
+        }
+
+        double[] y = new double[n];
+
+        double[][] V = new double[n][n];
+
+        double[][] A = new double[1][n];
+
+        for (int i = 0; i < n; i++) {
+
+            Alvo a = alvos.get(i);
+
+            List<LeituraSensor> historico =
+                    buffer.get(a);
+
+            if (historico == null
+                    || historico.isEmpty()) {
+
+                continue;
+            }
+
+            double soma = 0;
+
+            for (LeituraSensor l : historico) {
+
+                double dx =
+                        l.getX() - canhao.getX();
+
+                double dy =
+                        l.getY() - canhao.getY();
+
+                soma += Math.sqrt(
+                        dx * dx + dy * dy
+                );
+            }
+
+            double media =
+                    soma / historico.size();
+
+            y[i] = media;
+
+            // variância simples
+            double variancia = 1;
+
+            for (LeituraSensor l : historico) {
+
+                double dx =
+                        l.getX() - canhao.getX();
+
+                double dy =
+                        l.getY() - canhao.getY();
+
+                double d =
+                        Math.sqrt(dx*dx + dy*dy);
+
+                variancia +=
+                        Math.pow(d - media, 2);
+            }
+
+            variancia /= historico.size();
+
+            V[i][i] = variancia;
+
+            // incidência
+            A[0][i] =
+                    (media < 300)
+                            ? 1
+                            : 0;
+        }
+
+        return DataReconciliation
+                .reconcile(y, V, A);
+    }
 
     private void otimizarLado(
             List<Canhao> canhoes,
-            List<Alvo> alvos
+            List<Alvo> alvos,
+            Map<Alvo, List<LeituraSensor>> buffer,
+            Lado lado
     ) {
+
+        System.out.println("OTIMIZANDO " + lado);
 
         if (canhoes.isEmpty() || alvos.isEmpty()) {
             return;
         }
 
-        for (Canhao c : canhoes) {
+        int numCanhoes = canhoes.size();
+        int numAlvos = alvos.size();
 
-            List<Alvo> alvosProximos = new ArrayList<>();
+        // Vetor de medições
+        double[] y = new double[numCanhoes * numAlvos];
+
+        // Matriz de covariância
+        double[][] V = new double[y.length][y.length];
+
+        // Matriz de incidência
+        double[][] A = new double[y.length][y.length];
+
+        int indice = 0;
+
+        for (Canhao c : canhoes) {
 
             for (Alvo a : alvos) {
 
-                double dx = a.getX() - c.getX();
-                double dy = a.getY() - c.getY();
+                List<LeituraSensor> leituras =
+                        buffer.getOrDefault(a, new ArrayList<>());
 
-                double distancia =
-                        Math.sqrt(dx * dx + dy * dy);
+                double soma = 0;
 
-                // pega apenas alvos próximos
-                if (distancia < 300) {
-                    alvosProximos.add(a);
+                for (LeituraSensor l : leituras) {
+
+                    double dx = l.getX() - c.getX();
+                    double dy = l.getY() - c.getY();
+
+                    soma += Math.sqrt(dx * dx + dy * dy);
                 }
-            }
 
-            // se não encontrou próximos
-            // pega o mais próximo
-            if (alvosProximos.isEmpty()) {
+                double media;
 
-                Alvo maisProximo = null;
-
-                double menor = Double.MAX_VALUE;
-
-                for (Alvo a : alvos) {
+                if (leituras.isEmpty()) {
 
                     double dx = a.getX() - c.getX();
                     double dy = a.getY() - c.getY();
 
-                    double distancia =
-                            Math.sqrt(dx * dx + dy * dy);
+                    media = Math.sqrt(dx * dx + dy * dy);
 
-                    if (distancia < menor) {
+                } else {
 
-                        menor = distancia;
+                    media = soma / leituras.size();
+                }
 
-                        maisProximo = a;
+                // Variância
+                double variancia = 1;
+
+                if (!leituras.isEmpty()) {
+
+                    double somaVar = 0;
+
+                    for (LeituraSensor l : leituras) {
+
+                        double dx = l.getX() - c.getX();
+                        double dy = l.getY() - c.getY();
+
+                        double d = Math.sqrt(dx * dx + dy * dy);
+
+                        somaVar += Math.pow(d - media, 2);
+                    }
+
+                    variancia = somaVar / leituras.size();
+
+                    if (variancia < 1) {
+                        variancia = 1;
                     }
                 }
 
-                if (maisProximo != null) {
-                    alvosProximos.add(maisProximo);
+                y[indice] = media;
+
+                // Matriz V diagonal
+                V[indice][indice] = variancia;
+
+                // Matriz A
+                if (media < 500) {
+                    A[indice][indice] = 1;
+                } else {
+                    A[indice][indice] = 0;
                 }
+
+                indice++;
             }
+        }
+
+        // =========================
+        // RECONCILIAÇÃO
+        // =========================
+
+        double[] yHat;
+
+        try {
+
+            yHat = DataReconciliation.reconcile(y, V, A);
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            // fallback
+            yHat = y;
+        }
+
+        // =========================
+        // REALOCAÇÃO DOS CANHÕES
+        // =========================
+
+        indice = 0;
+
+        for (Canhao c : canhoes) {
 
             double somaX = 0;
             double somaY = 0;
+            int contador = 0;
 
-            for (Alvo a : alvosProximos) {
+            for (Alvo a : alvos) {
 
-                somaX += a.getX();
-                somaY += a.getY();
+                double distanciaReconciliada = yHat[indice];
+
+                if (distanciaReconciliada < 500) {
+
+                    somaX += a.getX();
+                    somaY += a.getY();
+
+                    contador++;
+                }
+
+                indice++;
             }
 
-            int alvoX =
-                    (int)(somaX / alvosProximos.size());
+            if (contador > 0) {
 
-            int alvoY =
-                    (int)(somaY / alvosProximos.size());
+                int alvoX = (int)(somaX / contador);
+                int alvoY = (int)(somaY / contador);
 
-            c.definirDestino(alvoX, alvoY);
+                c.definirDestino(alvoX, alvoY);
+            }
+        }
+
+        // =========================
+        // FUNÇÃO DE UTILIDADE
+        // =========================
+
+        double taxaDisparoMedia = 0;
+
+        for (Canhao c : canhoes) {
+            taxaDisparoMedia += c.getCapacidade();
+        }
+
+        taxaDisparoMedia /= canhoes.size();
+
+        double utilidade =
+                (numAlvos * taxaDisparoMedia)
+                        - (numCanhoes * 2);
+
+        System.out.println(
+                "Lado: " + lado +
+                        " | Utilidade: " + utilidade +
+                        " | Canhões: " + numCanhoes +
+                        " | Energia: " +
+                        (lado == Lado.ESQUERDO ?
+                                energiaEsquerda :
+                                energiaDireita)
+        );
+
+        // =========================
+        // DECISÃO GULOSA
+        // =========================
+
+        double energiaAtual =
+                (lado == Lado.ESQUERDO)
+                        ? energiaEsquerda
+                        : energiaDireita;
+
+        // adiciona canhão
+        if (energiaAtual > 20 && numCanhoes < numAlvos) {
+
+            adicionarCanhao(lado);
+
+            System.out.println(
+                    "NOVO CANHÃO ADICIONADO -> " + lado
+            );
+        }
+
+        // remove canhão
+        else if (energiaAtual < 5 && numCanhoes > 1) {
+
+            Canhao remover =
+                    canhoes.get(canhoes.size() - 1);
+
+            remover.parar();
+
+            canhoes.remove(remover);
+
+            System.out.println(
+                    "CANHÃO REMOVIDO -> " + lado
+            );
         }
     }
-
     public synchronized void transferirAlvo(Alvo alvo, Lado novoLado) {
 
         if (novoLado == Lado.ESQUERDO) {
@@ -720,10 +940,9 @@ public class Jogo extends Thread {
                 coletarDadosSensores();
                 atualizarMatrizIncidencia();
                 if (System.currentTimeMillis() - ultimaOtimizacao >= 10000) {
-                    otimizarLado(canhoesEsquerda, alvosEsquerda);
-                    otimizarLado(canhoesDireita, alvosDireita);
-                    decidirCanhoes(Lado.ESQUERDO);
-                    decidirCanhoes(Lado.DIREITO);
+
+                    otimizarLado(canhoesEsquerda,alvosEsquerda,bufferEsquerda,Lado.ESQUERDO);
+                    otimizarLado(canhoesDireita,alvosDireita,bufferDireita,Lado.DIREITO);
                     ultimaOtimizacao = System.currentTimeMillis();
                 }
             }
