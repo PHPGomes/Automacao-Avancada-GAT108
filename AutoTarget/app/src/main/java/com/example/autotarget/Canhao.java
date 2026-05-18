@@ -11,6 +11,8 @@ import java.util.List;
 public class Canhao extends Thread {
 
     private int x, y, size, numBalas;
+    private int destinoX;
+    private int destinoY;
     private Paint paint;
     private Path path;
     private boolean running = true;
@@ -31,9 +33,11 @@ public class Canhao extends Thread {
         this.jogo = jogo;
         delayTiros = DELAY_BASE;
         this.lado = lado;
-        numBalas = 5;
+        numBalas = 999;
         ultimoTiro = 0;
         capacidade = 1000.0 / calcularDelay();
+        destinoX = x;
+        destinoY = y;
 
         paint = new Paint();
         paint.setColor(Color.BLUE);
@@ -52,6 +56,12 @@ public class Canhao extends Thread {
         path.lineTo(x + size, y + size);
         path.close();
         canvas.drawPath(path, paint);
+        canvas.drawCircle(
+                destinoX,
+                destinoY,
+                20,
+                paint
+        );
     }
 
     public void atirar() {
@@ -72,6 +82,36 @@ public class Canhao extends Thread {
             ultimoTiro = System.currentTimeMillis();
         }
     }
+
+    private void mover() {
+
+        int velocidade = 4;
+
+        // eixo X
+        int dx = destinoX - x;
+
+        if (Math.abs(dx) > velocidade) {
+
+            x += (dx > 0) ? velocidade : -velocidade;
+
+        } else {
+
+            x = destinoX;
+        }
+
+        // eixo Y
+        int dy = destinoY - y;
+
+        if (Math.abs(dy) > velocidade) {
+
+            y += (dy > 0) ? velocidade : -velocidade;
+
+        } else {
+
+            y = destinoY;
+        }
+    }
+
     private boolean temEnergia() {
 
         if (lado == Lado.ESQUERDO) {
@@ -79,6 +119,15 @@ public class Canhao extends Thread {
         }
 
         return jogo.getEnergiaDireita() > 0;
+    }
+
+    public void definirDestino(int x, int y) {
+        destinoX = x;
+        destinoY = y;
+        System.out.println(
+                "Novo destino: " +
+                        destinoX + "," + destinoY
+        );
     }
 
     public boolean getRunning() {
@@ -148,6 +197,7 @@ public class Canhao extends Thread {
     @Override
     public void run() {
         while (running) {
+            mover();
             atirar();
             if (numBalas <= 0) {
                 running = false;

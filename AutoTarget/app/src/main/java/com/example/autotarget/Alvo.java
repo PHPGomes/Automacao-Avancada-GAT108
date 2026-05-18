@@ -92,14 +92,14 @@ public class Alvo extends Thread {
         }
 
         if (ladoAnterior != lado) {
-            System.out.println("Alvo mudou para: " + lado);
+        //    System.out.println("Alvo mudou para: " + lado);
         }
 
         if (ladoAnterior != lado) {
 
             jogo.transferirAlvo(this, lado);
 
-            System.out.println("Alvo mudou para: " + lado);
+        //    System.out.println("Alvo mudou para: " + lado);
         }
     }
 

@@ -32,6 +32,7 @@ public class Jogo extends Thread {
     private int tempoInicial = 60;
     private long ultimoSegundo;
     private long ultimaColeta;
+    private long ultimaOtimizacao;
     private boolean jogoFinalizado = false;
     private boolean partidaIniciada = false;
     private double[][] matrizIncidencia;
@@ -51,6 +52,7 @@ public class Jogo extends Thread {
         bufferDireita = new HashMap<>();
         numAlvos = 5;
         ultimaColeta = 0;
+        ultimaOtimizacao = 0;
         energiaEsquerda = iniEnergiaEsquerda;
         energiaDireita = iniEnergiaDireita;
     }
@@ -78,6 +80,7 @@ public class Jogo extends Thread {
             }
         }
     }
+
     public synchronized boolean consumirEnergia(Lado lado) {
 
         if (lado == Lado.ESQUERDO) {
@@ -215,9 +218,9 @@ public class Jogo extends Thread {
             for (int c = 0; c < numAlvos; c++) {
                 Alvo a;
                 if (random.nextInt(100) < 70) {
-                    a = new AlvoComum(gameView.getWidth() / 2, gameView.getHeight() / 2, gameView.getWidth(), gameView.getHeight(), gameView,this);
+                    a = new AlvoComum(gameView.getWidth() / 2, gameView.getHeight() / 2, gameView.getWidth(), gameView.getHeight(), gameView, this);
                 } else {
-                    a = new AlvoRapido(gameView.getWidth() / 2, gameView.getHeight() / 2, gameView.getWidth(), gameView.getHeight(), gameView,this);
+                    a = new AlvoRapido(gameView.getWidth() / 2, gameView.getHeight() / 2, gameView.getWidth(), gameView.getHeight(), gameView, this);
                 }
                 if (a.getLado() == Lado.ESQUERDO) {
                     alvosEsquerda.add(a);
@@ -339,7 +342,7 @@ public class Jogo extends Thread {
                         alvo.getY() - canhao.getY();
 
                 double distancia =
-                        Math.sqrt(dx*dx + dy*dy);
+                        Math.sqrt(dx * dx + dy * dy);
 
                 matrizIncidencia[i][j] =
                         1.0 / (distancia + 1);
@@ -379,7 +382,7 @@ public class Jogo extends Thread {
             }
 
             semaforoCanhoes.acquire();
-            Canhao novoCanhao = new Canhao(x, y, gameView, this,lado);
+            Canhao novoCanhao = new Canhao(x, y, gameView, this, lado);
             if (novoCanhao.getLado() == Lado.ESQUERDO) {
                 canhoesEsquerda.add(novoCanhao);
             } else {
@@ -404,6 +407,80 @@ public class Jogo extends Thread {
         return alvosDireita;
     }
 
+    private void otimizarLado(
+            List<Canhao> canhoes,
+            List<Alvo> alvos
+    ) {
+
+        if (canhoes.isEmpty() || alvos.isEmpty()) {
+            return;
+        }
+
+        for (Canhao c : canhoes) {
+
+            List<Alvo> alvosProximos = new ArrayList<>();
+
+            for (Alvo a : alvos) {
+
+                double dx = a.getX() - c.getX();
+                double dy = a.getY() - c.getY();
+
+                double distancia =
+                        Math.sqrt(dx * dx + dy * dy);
+
+                // pega apenas alvos próximos
+                if (distancia < 300) {
+                    alvosProximos.add(a);
+                }
+            }
+
+            // se não encontrou próximos
+            // pega o mais próximo
+            if (alvosProximos.isEmpty()) {
+
+                Alvo maisProximo = null;
+
+                double menor = Double.MAX_VALUE;
+
+                for (Alvo a : alvos) {
+
+                    double dx = a.getX() - c.getX();
+                    double dy = a.getY() - c.getY();
+
+                    double distancia =
+                            Math.sqrt(dx * dx + dy * dy);
+
+                    if (distancia < menor) {
+
+                        menor = distancia;
+
+                        maisProximo = a;
+                    }
+                }
+
+                if (maisProximo != null) {
+                    alvosProximos.add(maisProximo);
+                }
+            }
+
+            double somaX = 0;
+            double somaY = 0;
+
+            for (Alvo a : alvosProximos) {
+
+                somaX += a.getX();
+                somaY += a.getY();
+            }
+
+            int alvoX =
+                    (int)(somaX / alvosProximos.size());
+
+            int alvoY =
+                    (int)(somaY / alvosProximos.size());
+
+            c.definirDestino(alvoX, alvoY);
+        }
+    }
 
     public synchronized void transferirAlvo(Alvo alvo, Lado novoLado) {
 
@@ -424,6 +501,7 @@ public class Jogo extends Thread {
             }
         }
     }
+
     private void finalizarJogo() {
 
         jogoFinalizado = true;
@@ -440,6 +518,7 @@ public class Jogo extends Thread {
             b.parar();
         }
     }
+
     public List<Canhao> getCanhoes() {
         List<Canhao> todos = new ArrayList<>();
         todos.addAll(canhoesEsquerda);
@@ -457,18 +536,38 @@ public class Jogo extends Thread {
     public List<Bala> getBalas() {
         return balas;
     }
-    public List<Canhao> getCanhoesEsquerda() { return canhoesEsquerda; }
-    public List<Canhao> getCanhoesDireita() { return canhoesDireita; }
+
+    public List<Canhao> getCanhoesEsquerda() {
+        return canhoesEsquerda;
+    }
+
+    public List<Canhao> getCanhoesDireita() {
+        return canhoesDireita;
+    }
+
     public int getPontuacao1() {
         return pontuacao1;
     }
-    public int getTempoRestante() { return tempoRestante; }
-    public boolean isJogoFinalizado() { return jogoFinalizado; }
+
+    public int getTempoRestante() {
+        return tempoRestante;
+    }
+
+    public boolean isJogoFinalizado() {
+        return jogoFinalizado;
+    }
+
     public int getPontuacao2() {
         return pontuacao2;
     }
-    public double getEnergiaEsquerda() { return energiaEsquerda; }
-    public double getEnergiaDireita() { return energiaDireita; }
+
+    public double getEnergiaEsquerda() {
+        return energiaEsquerda;
+    }
+
+    public double getEnergiaDireita() {
+        return energiaDireita;
+    }
 
     public void parar() {
         running = false;
@@ -487,6 +586,11 @@ public class Jogo extends Thread {
                 atualizarTempo();
                 coletarDadosSensores();
                 atualizarMatrizIncidencia();
+                if (System.currentTimeMillis() - ultimaOtimizacao >= 10000) {
+                    otimizarLado(canhoesEsquerda, alvosEsquerda);
+                    otimizarLado(canhoesDireita, alvosDireita);
+                    ultimaOtimizacao = System.currentTimeMillis();
+                }
             }
             try {
                 Thread.sleep(16);
