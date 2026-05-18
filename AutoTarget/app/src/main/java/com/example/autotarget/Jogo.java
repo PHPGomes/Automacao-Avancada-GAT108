@@ -407,6 +407,139 @@ public class Jogo extends Thread {
         return alvosDireita;
     }
 
+    private double calcularUtilidade(
+            List<Canhao> canhoes,
+            List<Alvo> alvos
+    ) {
+
+        if (canhoes.isEmpty()) {
+            return 0;
+        }
+
+        double capacidadeTotal = 0;
+
+        for (Canhao c : canhoes) {
+
+            capacidadeTotal += c.getCapacidade();
+        }
+
+        // demanda total dos alvos
+        double demandaTotal = 0;
+
+        for (Alvo a : alvos) {
+
+            demandaTotal += a.getDemanda();
+        }
+
+        // penalidade por excesso
+        double penalidade = 0;
+
+        if (canhoes.size() > 5) {
+
+            penalidade =
+                    (canhoes.size() - 5) * 0.5;
+        }
+
+        // custo energético
+        double custoEnergia =
+                canhoes.size() * 0.2;
+
+        return capacidadeTotal
+                - custoEnergia
+                - penalidade
+                - Math.abs(
+                demandaTotal - capacidadeTotal
+        );
+    }
+
+    private void decidirCanhoes(
+            Lado lado
+    ) {
+
+        List<Canhao> canhoes =
+                (lado == Lado.ESQUERDO)
+                        ? canhoesEsquerda
+                        : canhoesDireita;
+
+        List<Alvo> alvos =
+                (lado == Lado.ESQUERDO)
+                        ? alvosEsquerda
+                        : alvosDireita;
+
+        double energia =
+                (lado == Lado.ESQUERDO)
+                        ? energiaEsquerda
+                        : energiaDireita;
+
+        // capacidade total atual
+        double capacidadeTotal = 0;
+
+        for (Canhao c : canhoes) {
+
+            capacidadeTotal += c.getCapacidade();
+        }
+
+        // demanda total
+        double demandaTotal = 0;
+
+        for (Alvo a : alvos) {
+
+            demandaTotal += a.getDemanda();
+        }
+
+    /*
+        ADICIONAR CANHÕES
+     */
+
+        boolean poucaCapacidade =
+                capacidadeTotal < demandaTotal;
+
+        boolean energiaSobrando =
+                energia > 30;
+
+        boolean podeExpandir =
+                canhoes.size() < 15;
+
+        if ((poucaCapacidade || energiaSobrando)
+                && podeExpandir) {
+
+            adicionarCanhao(lado);
+
+            System.out.println(
+                    "NOVO CANHÃO -> " + lado
+            );
+
+            return;
+        }
+
+    /*
+        REMOVER CANHÕES
+     */
+
+        boolean capacidadeExcessiva =
+                capacidadeTotal > demandaTotal * 2;
+
+        boolean poucaEnergia =
+                energia < 10;
+
+        if ((capacidadeExcessiva || poucaEnergia)
+                && canhoes.size() > 1) {
+
+            Canhao c =
+                    canhoes.get(
+                            canhoes.size() - 1
+                    );
+
+            c.parar();
+
+            canhoes.remove(c);
+
+            System.out.println(
+                    "REMOVENDO CANHÃO -> " + lado
+            );
+        }
+    }
+
     private void otimizarLado(
             List<Canhao> canhoes,
             List<Alvo> alvos
@@ -589,6 +722,8 @@ public class Jogo extends Thread {
                 if (System.currentTimeMillis() - ultimaOtimizacao >= 10000) {
                     otimizarLado(canhoesEsquerda, alvosEsquerda);
                     otimizarLado(canhoesDireita, alvosDireita);
+                    decidirCanhoes(Lado.ESQUERDO);
+                    decidirCanhoes(Lado.DIREITO);
                     ultimaOtimizacao = System.currentTimeMillis();
                 }
             }
