@@ -9,6 +9,7 @@ import java.util.Random;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+
 public class Jogo extends Thread {
 
     private List<Canhao> canhoesEsquerda;
@@ -16,6 +17,7 @@ public class Jogo extends Thread {
     private List<Alvo> alvosEsquerda;
     private List<Alvo> alvosDireita;
     private List<Bala> balas;
+    private List<TarefaTempoReal> tarefas;
     private Map<Alvo, List<LeituraSensor>> bufferEsquerda;
     private Map<Alvo, List<LeituraSensor>> bufferDireita;
 
@@ -55,6 +57,17 @@ public class Jogo extends Thread {
         ultimaOtimizacao = 0;
         energiaEsquerda = iniEnergiaEsquerda;
         energiaDireita = iniEnergiaDireita;
+        tarefas = new ArrayList<>();
+        tarefas.add(new TarefaTempoReal("MovimentacaoAlvos",10,16,16,2,4));
+        tarefas.add(new TarefaTempoReal("DisparoCanhoes",9,16,16,2,3));
+        tarefas.add(new TarefaTempoReal("Colisoes",8,20,20,2,5));
+        tarefas.add(new TarefaTempoReal("AtualizacaoUI",7,16,16,1,4));
+        tarefas.add(new TarefaTempoReal("ColetaSensores",6,1000,1000,10,8));
+        tarefas.add(new TarefaTempoReal("Reconsolidacao",5,10000,10000,20,20));
+        tarefas.add(new TarefaTempoReal("Energia",4,500,500,5,4));
+        tarefas.add(new TarefaTempoReal("GeradorOndas",3,3000,3000,10,6));
+        boolean escalonavel =EscalonadorRM.verificarEscalonabilidade(tarefas);
+        System.out.println("Sistema escalonavel: " + escalonavel);
     }
 
     public void atualizar() {
@@ -933,7 +946,9 @@ public class Jogo extends Thread {
 
     @Override
     public void run() {
+        setPriority(Thread.MAX_PRIORITY);
         while (running) {
+            long inicio = System.nanoTime();
             if (partidaIniciada && !jogoFinalizado) {
                 atualizar();
                 atualizarTempo();
@@ -946,6 +961,9 @@ public class Jogo extends Thread {
                     ultimaOtimizacao = System.currentTimeMillis();
                 }
             }
+            long fim = System.nanoTime();
+            long tempo = (fim - inicio) / 1000000;
+            System.out.println("Tempo canhao: "+ tempo + " ms");
             try {
                 Thread.sleep(16);
             } catch (InterruptedException e) {

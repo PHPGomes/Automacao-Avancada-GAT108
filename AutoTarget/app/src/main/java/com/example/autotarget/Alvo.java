@@ -141,8 +141,9 @@ public class Alvo extends Thread {
     public void run() {
         // A chamada de Atualizadestino() já foi feita no construtor se as dimensões eram válidas.
         // Se não eram, será feita na primeira vez que tamX/tamY forem > 0 dentro do loop.
-
+        setPriority(Thread.MAX_PRIORITY);
         while (running) {
+            long inicio = System.nanoTime();
             // Garante que o destino seja atualizado se as dimensões se tornarem válidas após a criação
             if (tamX > 0 && tamY > 0 && desX == 0 && desY == 0) {
                 Atualizadestino();
@@ -151,7 +152,9 @@ public class Alvo extends Thread {
             if (tamX > 0 && tamY > 0) {
                 mover();
             }
-
+            long fim = System.nanoTime();
+            long tempo = (fim - inicio) / 1000000;
+            System.out.println("Tempo canhao: "+ tempo + " ms");
             if (gameView != null) {
                 gameView.postInvalidate();
             }
