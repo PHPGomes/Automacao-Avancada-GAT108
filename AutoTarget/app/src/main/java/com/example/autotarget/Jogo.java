@@ -17,12 +17,13 @@ public class Jogo extends Thread {
     private List<Alvo> alvosEsquerda;
     private List<Alvo> alvosDireita;
     private List<Bala> balas;
-    private List<TarefaTempoReal> tarefas;
+
     private Map<Alvo, List<LeituraSensor>> bufferEsquerda;
     private Map<Alvo, List<LeituraSensor>> bufferDireita;
 
     private int pontuacao1, pontuacao2;
     private int numAlvos;
+    private double[][] matrizIncidencia;
     private boolean running = true;
     private GameView gameView;
     private Random random = new Random();
@@ -37,7 +38,7 @@ public class Jogo extends Thread {
     private long ultimaOtimizacao;
     private boolean jogoFinalizado = false;
     private boolean partidaIniciada = false;
-    private double[][] matrizIncidencia;
+
 
     private Semaphore semaforoAlvos = new Semaphore(1);
     private Semaphore semaforoBalas = new Semaphore(1);
@@ -57,17 +58,7 @@ public class Jogo extends Thread {
         ultimaOtimizacao = 0;
         energiaEsquerda = iniEnergiaEsquerda;
         energiaDireita = iniEnergiaDireita;
-        tarefas = new ArrayList<>();
-        tarefas.add(new TarefaTempoReal("MovimentacaoAlvos",10,16,16,2,4));
-        tarefas.add(new TarefaTempoReal("DisparoCanhoes",9,16,16,2,3));
-        tarefas.add(new TarefaTempoReal("Colisoes",8,20,20,2,5));
-        tarefas.add(new TarefaTempoReal("AtualizacaoUI",7,16,16,1,4));
-        tarefas.add(new TarefaTempoReal("ColetaSensores",6,1000,1000,10,8));
-        tarefas.add(new TarefaTempoReal("Reconsolidacao",5,10000,10000,20,20));
-        tarefas.add(new TarefaTempoReal("Energia",4,500,500,5,4));
-        tarefas.add(new TarefaTempoReal("GeradorOndas",3,3000,3000,10,6));
-        boolean escalonavel =EscalonadorRM.verificarEscalonabilidade(tarefas);
-        System.out.println("Sistema escalonavel: " + escalonavel);
+
     }
 
     public void atualizar() {
@@ -224,7 +215,6 @@ public class Jogo extends Thread {
             semaforoAlvos.acquire();
             // Garante que o GameView tenha dimensões válidas antes de criar alvos
             if (gameView.getWidth() == 0 || gameView.getHeight() == 0) {
-                System.err.println("GameView ainda não tem dimensões válidas. Tente novamente.");
                 semaforoAlvos.release();
                 return;
             }
@@ -363,11 +353,12 @@ public class Jogo extends Thread {
         }
     }
 
+
+
     public void adicionarCanhao(Lado lado) {
         try {
             // Garante que o GameView tenha dimensões válidas antes de adicionar canhão
             if (gameView.getWidth() == 0 || gameView.getHeight() == 0) {
-                System.err.println("GameView ainda não tem dimensões válidas. Tente novamente.");
                 return;
             }
 
@@ -405,7 +396,6 @@ public class Jogo extends Thread {
             semaforoCanhoes.release();
 
         } catch (JogoException e) {
-            System.err.println("Erro do Jogo: " + e.getMessage());
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -465,93 +455,7 @@ public class Jogo extends Thread {
         );
     }
 
-    private void decidirCanhoes(
-            Lado lado
-    ) {
 
-        List<Canhao> canhoes =
-                (lado == Lado.ESQUERDO)
-                        ? canhoesEsquerda
-                        : canhoesDireita;
-
-        List<Alvo> alvos =
-                (lado == Lado.ESQUERDO)
-                        ? alvosEsquerda
-                        : alvosDireita;
-
-        double energia =
-                (lado == Lado.ESQUERDO)
-                        ? energiaEsquerda
-                        : energiaDireita;
-
-        // capacidade total atual
-        double capacidadeTotal = 0;
-
-        for (Canhao c : canhoes) {
-
-            capacidadeTotal += c.getCapacidade();
-        }
-
-        // demanda total
-        double demandaTotal = 0;
-
-        for (Alvo a : alvos) {
-
-            demandaTotal += a.getDemanda();
-        }
-
-    /*
-        ADICIONAR CANHÕES
-     */
-
-        boolean poucaCapacidade =
-                capacidadeTotal < demandaTotal;
-
-        boolean energiaSobrando =
-                energia > 30;
-
-        boolean podeExpandir =
-                canhoes.size() < 15;
-
-        if ((poucaCapacidade || energiaSobrando)
-                && podeExpandir) {
-
-            adicionarCanhao(lado);
-
-            System.out.println(
-                    "NOVO CANHÃO -> " + lado
-            );
-
-            return;
-        }
-
-    /*
-        REMOVER CANHÕES
-     */
-
-        boolean capacidadeExcessiva =
-                capacidadeTotal > demandaTotal * 2;
-
-        boolean poucaEnergia =
-                energia < 10;
-
-        if ((capacidadeExcessiva || poucaEnergia)
-                && canhoes.size() > 1) {
-
-            Canhao c =
-                    canhoes.get(
-                            canhoes.size() - 1
-                    );
-
-            c.parar();
-
-            canhoes.remove(c);
-
-            System.out.println(
-                    "REMOVENDO CANHÃO -> " + lado
-            );
-        }
-    }
     private double[] reconciliarDistancias(
             Canhao canhao,
             List<Alvo> alvos,
@@ -643,7 +547,6 @@ public class Jogo extends Thread {
             Lado lado
     ) {
 
-        System.out.println("OTIMIZANDO " + lado);
 
         if (canhoes.isEmpty() || alvos.isEmpty()) {
             return;
@@ -848,127 +751,127 @@ public class Jogo extends Thread {
             );
         }
     }
+
     public synchronized void transferirAlvo(Alvo alvo, Lado novoLado) {
 
-        if (novoLado == Lado.ESQUERDO) {
+                if (novoLado == Lado.ESQUERDO) {
 
-            alvosDireita.remove(alvo);
+                    alvosDireita.remove(alvo);
 
-            if (!alvosEsquerda.contains(alvo)) {
-                alvosEsquerda.add(alvo);
-            }
+                    if (!alvosEsquerda.contains(alvo)) {
+                        alvosEsquerda.add(alvo);
+                    }
 
-        } else {
+                } else {
 
-            alvosEsquerda.remove(alvo);
+                    alvosEsquerda.remove(alvo);
 
-            if (!alvosDireita.contains(alvo)) {
-                alvosDireita.add(alvo);
-            }
-        }
-    }
-
-    private void finalizarJogo() {
-
-        jogoFinalizado = true;
-
-        for (Alvo a : getAlvos()) {
-            a.parar();
-        }
-
-        for (Canhao c : getCanhoes()) {
-            c.parar();
-        }
-
-        for (Bala b : balas) {
-            b.parar();
-        }
-    }
-
-    public List<Canhao> getCanhoes() {
-        List<Canhao> todos = new ArrayList<>();
-        todos.addAll(canhoesEsquerda);
-        todos.addAll(canhoesDireita);
-        return todos;
-    }
-
-    public List<Alvo> getAlvos() {
-        List<Alvo> todos = new ArrayList<>();
-        todos.addAll(alvosEsquerda);
-        todos.addAll(alvosDireita);
-        return todos;
-    }
-
-    public List<Bala> getBalas() {
-        return balas;
-    }
-
-    public List<Canhao> getCanhoesEsquerda() {
-        return canhoesEsquerda;
-    }
-
-    public List<Canhao> getCanhoesDireita() {
-        return canhoesDireita;
-    }
-
-    public int getPontuacao1() {
-        return pontuacao1;
-    }
-
-    public int getTempoRestante() {
-        return tempoRestante;
-    }
-
-    public boolean isJogoFinalizado() {
-        return jogoFinalizado;
-    }
-
-    public int getPontuacao2() {
-        return pontuacao2;
-    }
-
-    public double getEnergiaEsquerda() {
-        return energiaEsquerda;
-    }
-
-    public double getEnergiaDireita() {
-        return energiaDireita;
-    }
-
-    public void parar() {
-        running = false;
-        for (Alvo a : alvosEsquerda) a.parar();
-        for (Alvo a : alvosDireita) a.parar();
-        for (Canhao c : canhoesEsquerda) c.parar();
-        for (Canhao c : canhoesDireita) c.parar();
-        for (Bala b : balas) b.parar();
-    }
-
-    @Override
-    public void run() {
-        setPriority(Thread.MAX_PRIORITY);
-        while (running) {
-            long inicio = System.nanoTime();
-            if (partidaIniciada && !jogoFinalizado) {
-                atualizar();
-                atualizarTempo();
-                coletarDadosSensores();
-                atualizarMatrizIncidencia();
-                if (System.currentTimeMillis() - ultimaOtimizacao >= 10000) {
-
-                    otimizarLado(canhoesEsquerda,alvosEsquerda,bufferEsquerda,Lado.ESQUERDO);
-                    otimizarLado(canhoesDireita,alvosDireita,bufferDireita,Lado.DIREITO);
-                    ultimaOtimizacao = System.currentTimeMillis();
+                    if (!alvosDireita.contains(alvo)) {
+                        alvosDireita.add(alvo);
+                    }
                 }
             }
-            long fim = System.nanoTime();
-            long tempo = (fim - inicio) / 1000000;
-            System.out.println("Tempo canhao: "+ tempo + " ms");
-            try {
-                Thread.sleep(16);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+
+            private void finalizarJogo() {
+
+                jogoFinalizado = true;
+
+                for (Alvo a : getAlvos()) {
+                    a.parar();
+                }
+
+                for (Canhao c : getCanhoes()) {
+                    c.parar();
+                }
+
+                for (Bala b : balas) {
+                    b.parar();
+                }
+            }
+
+            public List<Canhao> getCanhoes() {
+                List<Canhao> todos = new ArrayList<>();
+                todos.addAll(canhoesEsquerda);
+                todos.addAll(canhoesDireita);
+                return todos;
+            }
+
+            public List<Alvo> getAlvos() {
+                List<Alvo> todos = new ArrayList<>();
+                todos.addAll(alvosEsquerda);
+                todos.addAll(alvosDireita);
+                return todos;
+            }
+
+            public List<Bala> getBalas() {
+                return balas;
+            }
+
+            public List<Canhao> getCanhoesEsquerda() {
+                return canhoesEsquerda;
+            }
+
+            public List<Canhao> getCanhoesDireita() {
+                return canhoesDireita;
+            }
+
+            public int getPontuacao1() {
+                return pontuacao1;
+            }
+
+            public int getTempoRestante() {
+                return tempoRestante;
+            }
+
+            public boolean isJogoFinalizado() {
+                return jogoFinalizado;
+            }
+
+            public int getPontuacao2() {
+                return pontuacao2;
+            }
+
+            public double getEnergiaEsquerda() {
+                return energiaEsquerda;
+            }
+
+            public double getEnergiaDireita() {
+                return energiaDireita;
+            }
+
+            public void parar() {
+                running = false;
+                for (Alvo a : alvosEsquerda) a.parar();
+                for (Alvo a : alvosDireita) a.parar();
+                for (Canhao c : canhoesEsquerda) c.parar();
+                for (Canhao c : canhoesDireita) c.parar();
+                for (Bala b : balas) b.parar();
+            }
+
+            @Override
+            public void run() {
+                setPriority(Thread.MAX_PRIORITY);
+                while (running) {
+                    long inicio = System.nanoTime();
+                    if (partidaIniciada && !jogoFinalizado) {
+                        atualizar();
+                        atualizarTempo();
+                        coletarDadosSensores();
+                        atualizarMatrizIncidencia();
+                        if (System.currentTimeMillis() - ultimaOtimizacao >= 10000) {
+
+                            otimizarLado(canhoesEsquerda,alvosEsquerda,bufferEsquerda,Lado.ESQUERDO);
+                            otimizarLado(canhoesDireita,alvosDireita,bufferDireita,Lado.DIREITO);
+                            ultimaOtimizacao = System.currentTimeMillis();
+                        }
+                    }
+                    long fim = System.nanoTime();
+                    long tempo = (fim - inicio) / 1000000;
+                    try {
+                        Thread.sleep(16);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         }
-    }
-}

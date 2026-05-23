@@ -124,10 +124,6 @@ public class Canhao extends Thread {
     public void definirDestino(int x, int y) {
         destinoX = x;
         destinoY = y;
-        System.out.println(
-                "Novo destino: " +
-                        destinoX + "," + destinoY
-        );
     }
 
     public boolean getRunning() {
@@ -203,7 +199,6 @@ public class Canhao extends Thread {
             atirar();
             long fim = System.nanoTime();
             long tempo = (fim - inicio) / 1000000;
-            System.out.println("Tempo canhao: "+ tempo + " ms");
             if (numBalas <= 0) {
                 running = false;
             }

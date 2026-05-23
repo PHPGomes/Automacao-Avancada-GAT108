@@ -92,14 +92,12 @@ public class Alvo extends Thread {
         }
 
         if (ladoAnterior != lado) {
-        //    System.out.println("Alvo mudou para: " + lado);
         }
 
         if (ladoAnterior != lado) {
 
             jogo.transferirAlvo(this, lado);
 
-        //    System.out.println("Alvo mudou para: " + lado);
         }
     }
 
@@ -154,7 +152,6 @@ public class Alvo extends Thread {
             }
             long fim = System.nanoTime();
             long tempo = (fim - inicio) / 1000000;
-            System.out.println("Tempo canhao: "+ tempo + " ms");
             if (gameView != null) {
                 gameView.postInvalidate();
             }

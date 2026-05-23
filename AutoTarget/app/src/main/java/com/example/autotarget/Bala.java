@@ -132,7 +132,6 @@ public class Bala extends Thread {
             mover();
             long fim = System.nanoTime();
             long tempo = (fim - inicio) / 1000000;
-            System.out.println("Tempo canhao: "+ tempo + " ms");
             // evita null
             if (gameView != null) {
                 gameView.postInvalidate();
