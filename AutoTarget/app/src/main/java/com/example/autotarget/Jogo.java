@@ -7,10 +7,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Semaphore;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 
 public class Jogo extends Thread {
+
+    private FirebaseAuth mAuth;
+    private FirebaseUser currentUser;
+    private FirestoreRepository firestoreRepository;
+    private ScheduledExecutorService telemetryScheduler;
+
+    private double currentTemperature = 25.0; // Temperatura inicial simulada
+    private static final double TEMP_THRESHOLD = 40.0;
+    private static final long TELEMETRY_INTERVAL_SECONDS = 10;
+    private boolean isOverheating = false;
+
+    private static final double ENERGY_ADD_THRESHOLD = 25.0; // Limiar para adicionar canhão
+    private static final double ENERGY_REMOVE_THRESHOLD = 10.0; // Limiar para remover canhão
 
     private List<Canhao> canhoesEsquerda;
     private List<Canhao> canhoesDireita;
@@ -45,8 +63,21 @@ public class Jogo extends Thread {
     private Semaphore semaforoCanhoes = new Semaphore(1);
 
     public Jogo(GameView gameView) {
+        mAuth = FirebaseAuth.getInstance();
+        currentUser = mAuth.getCurrentUser();
+        firestoreRepository = new FirestoreRepository();
+        telemetryScheduler = Executors.newSingleThreadScheduledExecutor();
         this.gameView = gameView;
         canhoesEsquerda = new CopyOnWriteArrayList<>();
+
+        // Iniciar o agendador de telemetria
+        telemetryScheduler.scheduleAtFixedRate(() -> {
+            if (currentUser != null) {
+                simulateTemperature();
+                saveTelemetryData();
+                applyTemperatureFeedback();
+            }
+        }, 0, TELEMETRY_INTERVAL_SECONDS, TimeUnit.SECONDS);
         canhoesDireita = new CopyOnWriteArrayList<>();
         alvosEsquerda = new CopyOnWriteArrayList<>();
         alvosDireita = new CopyOnWriteArrayList<>();
@@ -81,8 +112,86 @@ public class Jogo extends Thread {
             if (tempoRestante <= 0) {
 
                 finalizarJogo();
+                saveGameResult(); // Salvar resultado da partida ao finalizar
             }
         }
+    }
+
+    private void saveGameResult() {
+        if (currentUser == null) {
+            return; // Não salva se não houver usuário logado
+        }
+
+        Map<String, Object> gameData = new HashMap<>();
+        gameData.put("timestamp", System.currentTimeMillis());
+        gameData.put("pontuacaoEsquerda", pontuacao1);
+        gameData.put("pontuacaoDireita", pontuacao2);
+        gameData.put("alvosAbatidos", numAlvos - 5); // Exemplo, ajustar conforme a lógica real
+        // TODO: Adicionar configurações dos canhões (posição, tipo, etc.)
+
+        // Criptografar dados sensíveis
+        try {
+            String encryptedPlayerName = Cryptography.encrypt("Jogador Teste"); // Substituir por nome real
+            String encryptedScore = Cryptography.encrypt(String.valueOf(Math.max(pontuacao1, pontuacao2)));
+            gameData.put("playerName", encryptedPlayerName);
+            gameData.put("finalScore", encryptedScore);
+        } catch (Exception e) {
+            e.printStackTrace();
+            // Fallback para salvar sem criptografia em caso de erro
+            gameData.put("playerName", "Jogador Teste");
+            gameData.put("finalScore", Math.max(pontuacao1, pontuacao2));
+        }
+
+        firestoreRepository.saveGameResult(currentUser.getUid(), gameData, new FirestoreRepository.FirestoreCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                // Log ou feedback de sucesso
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    private void simulateTemperature() {
+        // Simula variação de temperatura
+        currentTemperature += (random.nextDouble() * 2) - 1; // Varia entre -1 e +1
+        if (currentTemperature < 20) currentTemperature = 20;
+        if (currentTemperature > 50) currentTemperature = 50;
+    }
+
+    private void saveTelemetryData() {
+        Map<String, Object> telemetry = new HashMap<>();
+        telemetry.put("timestamp", System.currentTimeMillis());
+        telemetry.put("temperature", currentTemperature);
+        telemetry.put("isOverheating", isOverheating);
+
+        firestoreRepository.saveTelemetryData(currentUser.getUid(), telemetry, new FirestoreRepository.FirestoreCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                // Log ou feedback de sucesso
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    private void applyTemperatureFeedback() {
+        if (currentTemperature > TEMP_THRESHOLD) {
+            isOverheating = true;
+            // Aumentar o delay de tiro dos canhões (implementado na classe Canhao)
+        } else {
+            isOverheating = false;
+        }
+    }
+
+    public boolean isOverheating() {
+        return isOverheating;
     }
 
     public synchronized boolean consumirEnergia(Lado lado) {
@@ -180,18 +289,27 @@ public class Jogo extends Thread {
     private void removerMortos() {
         try {
             semaforoAlvos.acquire();
-            alvosEsquerda.removeIf(a -> !a.getRunning());
-            alvosDireita.removeIf(a -> !a.getRunning());
-            semaforoAlvos.release();
+            try {
+                alvosEsquerda.removeIf(a -> !a.getRunning());
+                alvosDireita.removeIf(a -> !a.getRunning());
+            } finally {
+                semaforoAlvos.release();
+            }
 
             semaforoBalas.acquire();
-            balas.removeIf(p -> !p.getRunning());
-            semaforoBalas.release();
+            try {
+                balas.removeIf(p -> !p.getRunning());
+            } finally {
+                semaforoBalas.release();
+            }
 
             semaforoCanhoes.acquire();
-            canhoesEsquerda.removeIf(c -> !c.getRunning());
-            canhoesDireita.removeIf(c -> !c.getRunning());
-            semaforoCanhoes.release();
+            try {
+                canhoesEsquerda.removeIf(c -> !c.getRunning());
+                canhoesDireita.removeIf(c -> !c.getRunning());
+            } finally {
+                semaforoCanhoes.release();
+            }
 
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -201,10 +319,13 @@ public class Jogo extends Thread {
     public void criarBala(int x, int y, int alvoX, int alvoY, Canhao canhaoAtirador) {
         try {
             semaforoBalas.acquire();
-            Bala b = new Bala(x, y, alvoX, alvoY, gameView, canhaoAtirador);
-            balas.add(b);
-            b.start();
-            semaforoBalas.release();
+            try {
+                Bala b = new Bala(x, y, alvoX, alvoY, gameView, canhaoAtirador);
+                balas.add(b);
+                b.start();
+            } finally {
+                semaforoBalas.release();
+            }
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -213,27 +334,29 @@ public class Jogo extends Thread {
     public void criarOnda() {
         try {
             semaforoAlvos.acquire();
-            // Garante que o GameView tenha dimensões válidas antes de criar alvos
-            if (gameView.getWidth() == 0 || gameView.getHeight() == 0) {
+            try {
+                // Garante que o GameView tenha dimensões válidas antes de criar alvos
+                if (gameView.getWidth() == 0 || gameView.getHeight() == 0) {
+                    return;
+                }
+                for (int c = 0; c < numAlvos; c++) {
+                    Alvo a;
+                    if (random.nextInt(100) < 70) {
+                        a = new AlvoComum(gameView.getWidth() / 2, gameView.getHeight() / 2, gameView.getWidth(), gameView.getHeight(), gameView, this);
+                    } else {
+                        a = new AlvoRapido(gameView.getWidth() / 2, gameView.getHeight() / 2, gameView.getWidth(), gameView.getHeight(), gameView, this);
+                    }
+                    if (a.getLado() == Lado.ESQUERDO) {
+                        alvosEsquerda.add(a);
+                    } else {
+                        alvosDireita.add(a);
+                    }
+                    a.start();
+                }
+                numAlvos += 5;
+            } finally {
                 semaforoAlvos.release();
-                return;
             }
-            for (int c = 0; c < numAlvos; c++) {
-                Alvo a;
-                if (random.nextInt(100) < 70) {
-                    a = new AlvoComum(gameView.getWidth() / 2, gameView.getHeight() / 2, gameView.getWidth(), gameView.getHeight(), gameView, this);
-                } else {
-                    a = new AlvoRapido(gameView.getWidth() / 2, gameView.getHeight() / 2, gameView.getWidth(), gameView.getHeight(), gameView, this);
-                }
-                if (a.getLado() == Lado.ESQUERDO) {
-                    alvosEsquerda.add(a);
-                } else {
-                    alvosDireita.add(a);
-                }
-                a.start();
-            }
-            numAlvos += 5;
-            semaforoAlvos.release();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -386,16 +509,20 @@ public class Jogo extends Thread {
             }
 
             semaforoCanhoes.acquire();
-            Canhao novoCanhao = new Canhao(x, y, gameView, this, lado);
-            if (novoCanhao.getLado() == Lado.ESQUERDO) {
-                canhoesEsquerda.add(novoCanhao);
-            } else {
-                canhoesDireita.add(novoCanhao);
+            try {
+                Canhao novoCanhao = new Canhao(x, y, gameView, this, lado);
+                if (novoCanhao.getLado() == Lado.ESQUERDO) {
+                    canhoesEsquerda.add(novoCanhao);
+                } else {
+                    canhoesDireita.add(novoCanhao);
+                }
+                novoCanhao.start();
+            } finally {
+                semaforoCanhoes.release();
             }
-            novoCanhao.start();
-            semaforoCanhoes.release();
 
         } catch (JogoException e) {
+            e.printStackTrace(); // Logar a exceção para depuração
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -726,8 +853,8 @@ public class Jogo extends Thread {
                         ? energiaEsquerda
                         : energiaDireita;
 
-        // adiciona canhão
-        if (energiaAtual > 20 && numCanhoes < numAlvos) {
+        // adiciona canhão com histerese
+        if (energiaAtual > ENERGY_ADD_THRESHOLD && numCanhoes < numAlvos) {
 
             adicionarCanhao(lado);
 
@@ -736,8 +863,8 @@ public class Jogo extends Thread {
             );
         }
 
-        // remove canhão
-        else if (energiaAtual < 5 && numCanhoes > 1) {
+        // remove canhão com histerese
+        else if (energiaAtual < ENERGY_REMOVE_THRESHOLD && numCanhoes > 1) {
 
             Canhao remover =
                     canhoes.get(canhoes.size() - 1);
@@ -754,124 +881,149 @@ public class Jogo extends Thread {
 
     public synchronized void transferirAlvo(Alvo alvo, Lado novoLado) {
 
-                if (novoLado == Lado.ESQUERDO) {
+        if (novoLado == Lado.ESQUERDO) {
 
-                    alvosDireita.remove(alvo);
+            alvosDireita.remove(alvo);
 
-                    if (!alvosEsquerda.contains(alvo)) {
-                        alvosEsquerda.add(alvo);
-                    }
-
-                } else {
-
-                    alvosEsquerda.remove(alvo);
-
-                    if (!alvosDireita.contains(alvo)) {
-                        alvosDireita.add(alvo);
-                    }
-                }
+            if (!alvosEsquerda.contains(alvo)) {
+                alvosEsquerda.add(alvo);
             }
 
-            private void finalizarJogo() {
+        } else {
 
-                jogoFinalizado = true;
+            alvosEsquerda.remove(alvo);
 
-                for (Alvo a : getAlvos()) {
-                    a.parar();
-                }
-
-                for (Canhao c : getCanhoes()) {
-                    c.parar();
-                }
-
-                for (Bala b : balas) {
-                    b.parar();
-                }
-            }
-
-            public List<Canhao> getCanhoes() {
-                List<Canhao> todos = new ArrayList<>();
-                todos.addAll(canhoesEsquerda);
-                todos.addAll(canhoesDireita);
-                return todos;
-            }
-
-            public List<Alvo> getAlvos() {
-                List<Alvo> todos = new ArrayList<>();
-                todos.addAll(alvosEsquerda);
-                todos.addAll(alvosDireita);
-                return todos;
-            }
-
-            public List<Bala> getBalas() {
-                return balas;
-            }
-
-            public List<Canhao> getCanhoesEsquerda() {
-                return canhoesEsquerda;
-            }
-
-            public List<Canhao> getCanhoesDireita() {
-                return canhoesDireita;
-            }
-
-            public int getPontuacao1() {
-                return pontuacao1;
-            }
-
-            public int getTempoRestante() {
-                return tempoRestante;
-            }
-
-            public boolean isJogoFinalizado() {
-                return jogoFinalizado;
-            }
-
-            public int getPontuacao2() {
-                return pontuacao2;
-            }
-
-            public double getEnergiaEsquerda() {
-                return energiaEsquerda;
-            }
-
-            public double getEnergiaDireita() {
-                return energiaDireita;
-            }
-
-            public void parar() {
-                running = false;
-                for (Alvo a : alvosEsquerda) a.parar();
-                for (Alvo a : alvosDireita) a.parar();
-                for (Canhao c : canhoesEsquerda) c.parar();
-                for (Canhao c : canhoesDireita) c.parar();
-                for (Bala b : balas) b.parar();
-            }
-
-            @Override
-            public void run() {
-                setPriority(Thread.MAX_PRIORITY);
-                while (running) {
-                    long inicio = System.nanoTime();
-                    if (partidaIniciada && !jogoFinalizado) {
-                        atualizar();
-                        atualizarTempo();
-                        coletarDadosSensores();
-                        atualizarMatrizIncidencia();
-                        if (System.currentTimeMillis() - ultimaOtimizacao >= 10000) {
-
-                            otimizarLado(canhoesEsquerda,alvosEsquerda,bufferEsquerda,Lado.ESQUERDO);
-                            otimizarLado(canhoesDireita,alvosDireita,bufferDireita,Lado.DIREITO);
-                            ultimaOtimizacao = System.currentTimeMillis();
-                        }
-                    }
-                    long fim = System.nanoTime();
-                    long tempo = (fim - inicio) / 1000000;
-                    try {
-                        Thread.sleep(16);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
+            if (!alvosDireita.contains(alvo)) {
+                alvosDireita.add(alvo);
             }
         }
+    }
+
+    private void finalizarJogo() {
+
+        jogoFinalizado = true;
+
+        for (Alvo a : getAlvos()) {
+            a.parar();
+        }
+
+        for (Canhao c : getCanhoes()) {
+            c.parar();
+        }
+
+        for (Bala b : balas) {
+            b.parar();
+        }
+    }
+
+    public List<Canhao> getCanhoes() {
+        List<Canhao> todos = new ArrayList<>();
+        todos.addAll(canhoesEsquerda);
+        todos.addAll(canhoesDireita);
+        return todos;
+    }
+
+    public List<Alvo> getAlvos() {
+        List<Alvo> todos = new ArrayList<>();
+        todos.addAll(alvosEsquerda);
+        todos.addAll(alvosDireita);
+        return todos;
+    }
+
+    public List<Bala> getBalas() {
+        return balas;
+    }
+
+    public List<Canhao> getCanhoesEsquerda() {
+        return canhoesEsquerda;
+    }
+
+    public List<Canhao> getCanhoesDireita() {
+        return canhoesDireita;
+    }
+
+    public int getPontuacao1() {
+        return pontuacao1;
+    }
+
+    public int getTempoRestante() {
+        return tempoRestante;
+    }
+
+    public boolean isJogoFinalizado() {
+        return jogoFinalizado;
+    }
+
+    public int getPontuacao2() {
+        return pontuacao2;
+    }
+
+    public double getEnergiaEsquerda() {
+        return energiaEsquerda;
+    }
+
+    public double getEnergiaDireita() {
+        return energiaDireita;
+    }
+
+    public void parar() {
+        running = false;
+        for (Alvo a : alvosEsquerda) a.parar();
+        for (Alvo a : alvosDireita) a.parar();
+        for (Canhao c : canhoesEsquerda) c.parar();
+        for (Canhao c : canhoesDireita) c.parar();
+        for (Bala b : balas) b.parar();
+    }
+
+    @Override
+    public void run() {
+        setPriority(Thread.MAX_PRIORITY);
+        while (running) {
+            long inicio = System.nanoTime();
+            if (partidaIniciada && !jogoFinalizado) {
+                atualizar();
+                atualizarTempo();
+                coletarDadosSensores();
+                atualizarMatrizIncidencia();
+                // Atualizar o currentUser caso o login tenha sido feito após a inicialização do Jogo
+                currentUser = mAuth.getCurrentUser();
+                if (System.currentTimeMillis() - ultimaOtimizacao >= 10000) {
+
+                    otimizarLado(canhoesEsquerda,alvosEsquerda,bufferEsquerda,Lado.ESQUERDO);
+                    otimizarLado(canhoesDireita,alvosDireita,bufferDireita,Lado.DIREITO);
+                    ultimaOtimizacao = System.currentTimeMillis();
+                }
+            }
+            long fim = System.nanoTime();
+            long tempo = (fim - inicio) / 1000000;
+            try {
+                Thread.sleep(16);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        // Ao parar o jogo, desligar o scheduler de telemetria
+        telemetryScheduler.shutdownNow();
+    }
+
+
+    public void setCurrentUser(FirebaseUser user) {
+        this.currentUser = user;
+    }
+
+    public FirebaseUser getCurrentUser() {
+        return currentUser;
+    }
+
+    public FirestoreRepository getFirestoreRepository() {
+        return firestoreRepository;
+    }
+
+    public FirebaseAuth getFirebaseAuth() {
+        return mAuth;
+    }
+
+    public double getCurrentTemperature() {
+        return currentTemperature;
+    }
+}

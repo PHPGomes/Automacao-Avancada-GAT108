@@ -1,17 +1,11 @@
 package com.example.autotarget;
 
-import java.util.List;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.view.View;
-
-import java.util.ArrayList;
-import java.util.List;
 import android.util.AttributeSet;
-
-import java.util.Random;
+import android.view.View;
 
 public class GameView extends View {
 
@@ -90,5 +84,9 @@ public class GameView extends View {
     }
     public void iniciarJogo() {
         jogo.iniciarPartida();
+    }
+
+    public Jogo getJogo() {
+        return jogo;
     }
 }

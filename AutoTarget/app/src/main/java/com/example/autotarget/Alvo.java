@@ -92,9 +92,6 @@ public class Alvo extends Thread {
         }
 
         if (ladoAnterior != lado) {
-        }
-
-        if (ladoAnterior != lado) {
 
             jogo.transferirAlvo(this, lado);
 
@@ -121,7 +118,6 @@ public class Alvo extends Thread {
     public Lado getLado() { return lado; }
 
     public boolean getRunning() { return running; }
-    public boolean getRuning() { return running; }
 
     public int getRaio() { return raio; }
     public GameView getGameView() { return gameView; }
@@ -137,12 +133,9 @@ public class Alvo extends Thread {
 
     @Override
     public void run() {
-        // A chamada de Atualizadestino() já foi feita no construtor se as dimensões eram válidas.
-        // Se não eram, será feita na primeira vez que tamX/tamY forem > 0 dentro do loop.
         setPriority(Thread.MAX_PRIORITY);
         while (running) {
             long inicio = System.nanoTime();
-            // Garante que o destino seja atualizado se as dimensões se tornarem válidas após a criação
             if (tamX > 0 && tamY > 0 && desX == 0 && desY == 0) {
                 Atualizadestino();
             }

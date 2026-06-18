@@ -171,6 +171,12 @@ public class Canhao extends Thread {
         }
         int excesso = quantidade - LIMITE_CANHOES;
         double fator = 1 + (excesso * 0.2);
+
+        // Feedback do sistema ciberfísico: se superaquecendo, reduz a taxa de disparo (aumenta o delay)
+        if (jogo.isOverheating()) {
+            fator *= 1.5; // Aumenta o delay em 50%
+        }
+
         return (int)(DELAY_BASE * fator);
     }
 
