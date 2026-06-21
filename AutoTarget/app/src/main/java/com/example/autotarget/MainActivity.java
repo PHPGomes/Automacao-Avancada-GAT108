@@ -1,24 +1,31 @@
 package com.example.autotarget;
+
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
 import androidx.appcompat.app.AppCompatActivity;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import android.content.Intent;
-import android.view.View;
 import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
     private FirebaseUser currentUser;
-
     private GameView gameView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // 1. Inicialização explícita do Firebase (Crucial para evitar tela preta na AV3)
+        try {
+            FirebaseApp.initializeApp(this);
+        } catch (Exception e) {
+            Log.e("MainActivity", "Erro ao inicializar Firebase: " + e.getMessage());
+        }
 
         setContentView(R.layout.activity_main);
 
@@ -33,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
 
         btnIniciar.setOnClickListener(v -> {
             if (currentUser != null) {
-                gameView.iniciarJogo();
+                if (gameView != null) gameView.iniciarJogo();
             } else {
                 Toast.makeText(MainActivity.this, "Faça login para iniciar o jogo!", Toast.LENGTH_SHORT).show();
             }
@@ -41,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
 
         btnAdicionarEsquerda.setOnClickListener(v -> {
             if (currentUser != null) {
-                gameView.adicionarCanhao(Lado.ESQUERDO);
+                if (gameView != null) gameView.adicionarCanhao(Lado.ESQUERDO);
             } else {
                 Toast.makeText(MainActivity.this, "Faça login para adicionar canhões!", Toast.LENGTH_SHORT).show();
             }
@@ -49,17 +56,13 @@ public class MainActivity extends AppCompatActivity {
 
         btnAdicionarDireita.setOnClickListener(v -> {
             if (currentUser != null) {
-                gameView.adicionarCanhao(Lado.DIREITO);
+                if (gameView != null) gameView.adicionarCanhao(Lado.DIREITO);
             } else {
                 Toast.makeText(MainActivity.this, "Faça login para adicionar canhões!", Toast.LENGTH_SHORT).show();
             }
         });
 
-        btnLogin.setOnClickListener(v -> {
-            // Implementar lógica de login/registro aqui
-            // Por simplicidade, vamos simular um login anônimo ou com credenciais fixas
-            signInAnonymously();
-        });
+        btnLogin.setOnClickListener(v -> signInAnonymously());
 
         btnRanking.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, RankingActivity.class);
@@ -70,7 +73,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onStart() {
         super.onStart();
-        // Check if user is signed in (non-null) and update UI accordingly.
         currentUser = mAuth.getCurrentUser();
         updateUI(currentUser);
     }
@@ -79,13 +81,11 @@ public class MainActivity extends AppCompatActivity {
         mAuth.signInAnonymously()
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
-                        // Sign in success, update UI with the signed-in user's information
                         Log.d("MainActivity", "signInAnonymously:success");
                         currentUser = mAuth.getCurrentUser();
                         updateUI(currentUser);
                         Toast.makeText(MainActivity.this, "Login anônimo realizado.", Toast.LENGTH_SHORT).show();
                     } else {
-                        // If sign in fails, display a message to the user.
                         Log.w("MainActivity", "signInAnonymously:failure", task.getException());
                         Toast.makeText(MainActivity.this, "Falha no login anônimo.", Toast.LENGTH_SHORT).show();
                         updateUI(null);
@@ -98,7 +98,5 @@ public class MainActivity extends AppCompatActivity {
         if (gameView != null && gameView.getJogo() != null) {
             gameView.getJogo().setCurrentUser(currentUser);
         }
-        // Atualizar visibilidade de botões ou textos conforme o estado de login
-        // Ex: btnLogin.setText(currentUser != null ? "Logout" : "Login");
     }
 }

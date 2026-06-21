@@ -13,7 +13,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
+import android.os.Handler;
+import android.os.Looper;
 
 public class Jogo extends Thread {
 
@@ -97,6 +98,9 @@ public class Jogo extends Thread {
         removerMortos();
         if (!jogoFinalizado && getAlvos().isEmpty()) {
             criarOnda();
+        }
+        if (gameView != null) {
+            new Handler(Looper.getMainLooper()).post(() -> gameView.invalidate());
         }
     }
 
@@ -992,6 +996,12 @@ public class Jogo extends Thread {
                     otimizarLado(canhoesEsquerda,alvosEsquerda,bufferEsquerda,Lado.ESQUERDO);
                     otimizarLado(canhoesDireita,alvosDireita,bufferDireita,Lado.DIREITO);
                     ultimaOtimizacao = System.currentTimeMillis();
+                }
+            }
+            else {
+                // ADICIONE ISSO AQUI: Mantém a tela ativa/visível antes do jogo começar
+                if (gameView != null) {
+                    new Handler(Looper.getMainLooper()).post(() -> gameView.invalidate());
                 }
             }
             long fim = System.nanoTime();

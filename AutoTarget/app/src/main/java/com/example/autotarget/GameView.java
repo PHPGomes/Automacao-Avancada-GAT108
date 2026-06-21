@@ -26,6 +26,16 @@ public class GameView extends View {
     }
 
     @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        // Se a thread do jogo ainda não começou, inicia ela agora que sabemos o tamanho da tela
+        if (jogo != null && !jogo.isAlive()) {
+            jogo.start();
+        }
+    }
+
+
+    @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         line.setColor(Color.BLACK);

@@ -2,7 +2,9 @@ package com.example.autotarget;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -21,6 +23,18 @@ public class RankingActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_ranking);
+
+        // Encontre o botão pelo ID
+        Button btnVoltar = findViewById(R.id.btnVoltar);
+
+        // Configure a ação de clique
+        btnVoltar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // O comando 'finish()' fecha a tela atual e volta para a anterior (MainActivity)
+                finish();
+            }
+        });
 
         rankingListView = findViewById(R.id.rankingListView);
         firestoreRepository = new FirestoreRepository();
