@@ -32,6 +32,7 @@ public class MainActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
 
         gameView = findViewById(R.id.gameView);
+
         Button btnIniciar = findViewById(R.id.btnIniciar);
         Button btnAdicionarEsquerda = findViewById(R.id.btnAdicionarEsquerda);
         Button btnAdicionarDireita = findViewById(R.id.btnAdicionarDireita);
@@ -62,12 +63,18 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        btnLogin.setOnClickListener(v -> signInAnonymously());
+        btnLogin.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+            startActivity(intent);
+            finish();
+        });
 
         btnRanking.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, RankingActivity.class);
             startActivity(intent);
         });
+
+
     }
 
     @Override
@@ -75,22 +82,6 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
         currentUser = mAuth.getCurrentUser();
         updateUI(currentUser);
-    }
-
-    private void signInAnonymously() {
-        mAuth.signInAnonymously()
-                .addOnCompleteListener(this, task -> {
-                    if (task.isSuccessful()) {
-                        Log.d("MainActivity", "signInAnonymously:success");
-                        currentUser = mAuth.getCurrentUser();
-                        updateUI(currentUser);
-                        Toast.makeText(MainActivity.this, "Login anônimo realizado.", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Log.w("MainActivity", "signInAnonymously:failure", task.getException());
-                        Toast.makeText(MainActivity.this, "Falha no login anônimo.", Toast.LENGTH_SHORT).show();
-                        updateUI(null);
-                    }
-                });
     }
 
     private void updateUI(FirebaseUser user) {

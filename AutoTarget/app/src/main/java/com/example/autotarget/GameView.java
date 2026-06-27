@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 
 public class GameView extends View {
@@ -19,7 +20,6 @@ public class GameView extends View {
     public GameView(Context context, AttributeSet attrs) {
         super(context, attrs);
         jogo = new Jogo(this);
-        jogo.start();
         texto1 = new Paint();
         texto2 = new Paint();
         line = new Paint();
@@ -28,7 +28,7 @@ public class GameView extends View {
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        // Se a thread do jogo ainda não começou, inicia ela agora que sabemos o tamanho da tela
+
         if (jogo != null && !jogo.isAlive()) {
             jogo.start();
         }
@@ -37,7 +37,13 @@ public class GameView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
+
+        if(getWidth()==0 || getHeight()==0){
+            return;
+        }
         super.onDraw(canvas);
+        Log.d("GAMEVIEW", "DESENHANDO");
+        canvas.drawColor(Color.BLACK);
         line.setColor(Color.BLACK);
         line.setStrokeWidth(5);
         Paint ladoEsquerdo = new Paint();
@@ -56,7 +62,7 @@ public class GameView extends View {
         canvas.drawText("Energia: " + (int) jogo.getEnergiaEsquerda(),50,150,texto1);
         canvas.drawText("Energia: " + (int) jogo.getEnergiaDireita(),590,150,texto2);
         canvas.drawText("Tempo: " + jogo.getTempoRestante(),getWidth()/2 - 460,getHeight() - 200,texto1);
-
+        Log.d("GAMEVIEW", "ANTES DOS OBJETOS");
         for (Canhao c : jogo.getCanhoes()) {
             c.draw(canvas);
         }
@@ -68,7 +74,7 @@ public class GameView extends View {
         for (Bala b : jogo.getBalas()) {
             b.draw(canvas);
         }
-
+        Log.d("GAMEVIEW", "DEPOIS DOS OBJETOS");
         if (jogo.isJogoFinalizado()) {
 
             Paint vencedor = new Paint();
@@ -87,6 +93,9 @@ public class GameView extends View {
             }
         }
     }
+
+
+
 
     public void adicionarCanhao(Lado lado) {
         jogo.adicionarCanhao(lado);
