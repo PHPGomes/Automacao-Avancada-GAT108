@@ -19,16 +19,22 @@ public class GameView extends View {
 
     public GameView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        jogo = new Jogo(this);
         texto1 = new Paint();
         texto2 = new Paint();
         line = new Paint();
     }
 
     @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        if (jogo == null) {
+            jogo = new Jogo(this);
+        }
+    }
+
+    @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-
         if (jogo != null && !jogo.isAlive()) {
             jogo.start();
         }
@@ -38,7 +44,7 @@ public class GameView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
 
-        if(getWidth()==0 || getHeight()==0){
+        if (getWidth() == 0 || getHeight() == 0 || jogo == null) {
             return;
         }
         super.onDraw(canvas);

@@ -2,6 +2,8 @@ package com.example.autotarget;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.util.Log;
+
 import java.util.Random;
 
 public class Alvo extends Thread {
@@ -128,13 +130,16 @@ public class Alvo extends Thread {
     }
 
     public void parar() {
+        Log.d("THREADS", "Parou Morreu Acabou ");
         running = false;
     }
 
     @Override
     public void run() {
         setPriority(Thread.MAX_PRIORITY);
+        Log.d("THREADS", "ALVO INICIOU");
         while (running) {
+
             long inicio = System.nanoTime();
             if (tamX > 0 && tamY > 0 && desX == 0 && desY == 0) {
                 Atualizadestino();
@@ -155,5 +160,6 @@ public class Alvo extends Thread {
                 e.printStackTrace();
             }
         }
+        Log.d("THREADS", "ALVO TERMINOU");
     }
 }

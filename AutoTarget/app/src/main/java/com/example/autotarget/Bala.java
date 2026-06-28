@@ -4,6 +4,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.util.Log;
 
 public class Bala extends Thread {
 
@@ -126,6 +127,7 @@ public class Bala extends Thread {
 
     @Override
     public void run() {
+        Log.d("THREADS", "BALA INICIOU");
         setPriority(Thread.MIN_PRIORITY);
         while (running) {
             long inicio = System.nanoTime();
@@ -133,14 +135,15 @@ public class Bala extends Thread {
             long fim = System.nanoTime();
             long tempo = (fim - inicio) / 1000000;
             // evita null
-            if (gameView != null) {
-                gameView.postInvalidate();
-            }
+            //if (gameView != null) {
+            //    gameView.postInvalidate();
+            //}
             try {
                 Thread.sleep(16);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
+        Log.d("THREADS", "BALA TERMINOU");
     }
 }

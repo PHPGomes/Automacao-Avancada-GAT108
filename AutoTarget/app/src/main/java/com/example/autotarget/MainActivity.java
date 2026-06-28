@@ -81,6 +81,13 @@ public class MainActivity extends AppCompatActivity {
     public void onStart() {
         super.onStart();
         currentUser = mAuth.getCurrentUser();
+        if (currentUser == null) {
+            // Sem usuário logado, vai para login
+            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+            startActivity(intent);
+            finish();
+            return;
+        }
         updateUI(currentUser);
     }
 

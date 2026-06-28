@@ -15,6 +15,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 
 public class Jogo extends Thread {
 
@@ -57,6 +58,7 @@ public class Jogo extends Thread {
     private long ultimaOtimizacao;
     private boolean jogoFinalizado = false;
     private boolean partidaIniciada = false;
+    private boolean criandoOnda = false;
 
 
     private Semaphore semaforoAlvos = new Semaphore(1);
@@ -70,15 +72,6 @@ public class Jogo extends Thread {
         telemetryScheduler = Executors.newSingleThreadScheduledExecutor();
         this.gameView = gameView;
         canhoesEsquerda = new CopyOnWriteArrayList<>();
-
-        // Iniciar o agendador de telemetria
-        telemetryScheduler.scheduleAtFixedRate(() -> {
-            if (currentUser != null) {
-                simulateTemperature();
-                saveTelemetryData();
-                applyTemperatureFeedback();
-            }
-        }, 0, TELEMETRY_INTERVAL_SECONDS, TimeUnit.SECONDS);
         canhoesDireita = new CopyOnWriteArrayList<>();
         alvosEsquerda = new CopyOnWriteArrayList<>();
         alvosDireita = new CopyOnWriteArrayList<>();
@@ -96,7 +89,7 @@ public class Jogo extends Thread {
     public void atualizar() {
         verificarColisoes();
         removerMortos();
-        if (!jogoFinalizado && getAlvos().isEmpty()) {
+        if (!jogoFinalizado && getAlvos().isEmpty() && !criandoOnda) {
             criarOnda();
         }
         if (gameView != null) {
@@ -104,6 +97,10 @@ public class Jogo extends Thread {
         }
     }
 
+    public boolean temAlvos() {
+        return !alvosEsquerda.isEmpty() ||
+                !alvosDireita.isEmpty();
+    }
 
     private void atualizarTempo() {
 
@@ -131,20 +128,60 @@ public class Jogo extends Thread {
         gameData.put("pontuacaoEsquerda", pontuacao1);
         gameData.put("pontuacaoDireita", pontuacao2);
         gameData.put("alvosAbatidos", numAlvos - 5); // Exemplo, ajustar conforme a lógica real
+        List<Map<String, Object>> configuracoesCanhoes = new ArrayList<>();
+
+        for (Canhao canhao : getCanhoes()) {
+
+            Map<String, Object> dadosCanhao = new HashMap<>();
+
+            dadosCanhao.put("x", canhao.getX());
+            dadosCanhao.put("y", canhao.getY());
+            dadosCanhao.put("lado", canhao.getLado().toString());
+            dadosCanhao.put("capacidade", canhao.getCapacidade());
+
+            configuracoesCanhoes.add(dadosCanhao);
+        }
+
+        gameData.put("configuracaoCanhoes", configuracoesCanhoes);
+
         // TODO: Adicionar configurações dos canhões (posição, tipo, etc.)
 
         // Criptografar dados sensíveis
+
+
+
         try {
-            String encryptedPlayerName = Cryptography.encrypt("Jogador Teste"); // Substituir por nome real
-            String encryptedScore = Cryptography.encrypt(String.valueOf(Math.max(pontuacao1, pontuacao2)));
+
+            int score = Math.max(pontuacao1, pontuacao2);
+
+            String nomeJogador = currentUser.getEmail();
+
+            if (nomeJogador == null) {
+                nomeJogador = "Jogador";
+            }
+
+            String encryptedPlayerName = Cryptography.encrypt(nomeJogador);
+            String encryptedScore = Cryptography.encrypt(String.valueOf(score));
+
             gameData.put("playerName", encryptedPlayerName);
-            gameData.put("finalScore", encryptedScore);
+
+            // usado para ordenar o ranking
+            gameData.put("finalScore", score);
+
+            // usado para demonstrar criptografia
+            gameData.put("finalScoreEncrypted", encryptedScore);
+
         } catch (Exception e) {
+
             e.printStackTrace();
-            // Fallback para salvar sem criptografia em caso de erro
-            gameData.put("playerName", "Jogador Teste");
+
+            gameData.put("playerName", "Jogador");
+
             gameData.put("finalScore", Math.max(pontuacao1, pontuacao2));
+
+            gameData.put("finalScoreEncrypted", String.valueOf(Math.max(pontuacao1, pontuacao2)));
         }
+
 
         firestoreRepository.saveGameResult(currentUser.getUid(), gameData, new FirestoreRepository.FirestoreCallback<Void>() {
             @Override
@@ -336,6 +373,11 @@ public class Jogo extends Thread {
     }
 
     public void criarOnda() {
+        if (criandoOnda) {
+            return;
+        }
+        Log.d("ONDA", "COMECOU CRIAR ONDA");
+        criandoOnda = true;
         try {
             semaforoAlvos.acquire();
             try {
@@ -344,25 +386,31 @@ public class Jogo extends Thread {
                     return;
                 }
                 for (int c = 0; c < numAlvos; c++) {
+                    Log.d("ONDA", "CRIANDO ALVO " + c);
                     Alvo a;
                     if (random.nextInt(100) < 70) {
                         a = new AlvoComum(gameView.getWidth() / 2, gameView.getHeight() / 2, gameView.getWidth(), gameView.getHeight(), gameView, this);
                     } else {
                         a = new AlvoRapido(gameView.getWidth() / 2, gameView.getHeight() / 2, gameView.getWidth(), gameView.getHeight(), gameView, this);
                     }
+                    Log.d("ONDA", "ALVO CRIADO");
                     if (a.getLado() == Lado.ESQUERDO) {
                         alvosEsquerda.add(a);
                     } else {
                         alvosDireita.add(a);
                     }
+                    Log.d("ONDA", "ANTES START");
                     a.start();
+                    Log.d("ONDA", "DEPOIS START");
                 }
-                numAlvos += 5;
+                //numAlvos += 5;
             } finally {
+                criandoOnda = false;
                 semaforoAlvos.release();
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
+            Log.e("ONDA", "ERRO NA ONDA", e);
         }
     }
 
@@ -982,6 +1030,19 @@ public class Jogo extends Thread {
     @Override
     public void run() {
         setPriority(Thread.MAX_PRIORITY);
+
+        telemetryScheduler.scheduleAtFixedRate(() -> {
+            currentUser = mAuth.getCurrentUser();
+            if (currentUser != null && partidaIniciada) {
+                simulateTemperature();
+                saveTelemetryData();
+                applyTemperatureFeedback();
+            }
+        }, TELEMETRY_INTERVAL_SECONDS, TELEMETRY_INTERVAL_SECONDS, TimeUnit.SECONDS);
+
+        // delay inicial igual ao intervalo, evita o 0 depreciado
+        setPriority(Thread.MAX_PRIORITY);
+
         while (running) {
             long inicio = System.nanoTime();
             if (partidaIniciada && !jogoFinalizado) {

@@ -50,7 +50,7 @@ public class RankingActivity extends AppCompatActivity {
                 for (Map<String, Object> entry : rankingList) {
                     try {
                         String playerName = Cryptography.decrypt((String) entry.get("playerName"));
-                        String finalScore = Cryptography.decrypt((String) entry.get("finalScore"));
+                        String finalScore = Cryptography.decrypt((String) entry.get("finalScoreEncrypted"));
                         displayList.add(playerName + " - " + finalScore + " pontos");
                     } catch (Exception e) {
                         Log.e("RankingActivity", "Erro ao descriptografar dados: " + e.getMessage());

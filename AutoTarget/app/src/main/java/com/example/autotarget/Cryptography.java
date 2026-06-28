@@ -20,7 +20,7 @@ public class Cryptography {
         cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, ivParameterSpec);
 
         byte[] encryptedBytes = cipher.doFinal(value.getBytes(StandardCharsets.UTF_8));
-        return Base64.encodeToString(encryptedBytes, Base64.DEFAULT);
+        return Base64.encodeToString(encryptedBytes, Base64.NO_WRAP);
     }
 
     public static String decrypt(String encrypted) throws Exception {
@@ -30,7 +30,7 @@ public class Cryptography {
         Cipher cipher = Cipher.getInstance(ALGORITHM);
         cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivParameterSpec);
 
-        byte[] decryptedBytes = cipher.doFinal(Base64.decode(encrypted, Base64.DEFAULT));
+        byte[] decryptedBytes = cipher.doFinal(Base64.decode(encrypted, Base64.NO_WRAP));
         return new String(decryptedBytes, StandardCharsets.UTF_8);
     }
 }
