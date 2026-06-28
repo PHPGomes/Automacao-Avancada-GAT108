@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Jogo extends Thread {
 
@@ -23,6 +24,15 @@ public class Jogo extends Thread {
     private FirebaseUser currentUser;
     private FirestoreRepository firestoreRepository;
     private ScheduledExecutorService telemetryScheduler;
+    private volatile boolean desenhando = false;
+
+    private final List<Canhao> canhoesDesenho = new ArrayList<>();
+    private final List<Alvo> alvosDesenho = new ArrayList<>();
+    private final List<Bala> balasDesenho = new ArrayList<>();
+
+    private boolean otimizando = false;
+
+    private Handler handler = new Handler(Looper.getMainLooper());
 
     private double currentTemperature = 25.0; // Temperatura inicial simulada
     private static final double TEMP_THRESHOLD = 40.0;
@@ -32,11 +42,19 @@ public class Jogo extends Thread {
     private static final double ENERGY_ADD_THRESHOLD = 25.0; // Limiar para adicionar canhão
     private static final double ENERGY_REMOVE_THRESHOLD = 10.0; // Limiar para remover canhão
 
-    private List<Canhao> canhoesEsquerda;
-    private List<Canhao> canhoesDireita;
-    private List<Alvo> alvosEsquerda;
-    private List<Alvo> alvosDireita;
-    private List<Bala> balas;
+    private List<Canhao> canhoesEsquerda =
+            new CopyOnWriteArrayList<>();
+
+    private List<Canhao> canhoesDireita =
+            new CopyOnWriteArrayList<>();
+
+    private List<Alvo> alvosEsquerda =
+            new CopyOnWriteArrayList<>();
+    private List<Alvo> alvosDireita =
+            new CopyOnWriteArrayList<>();
+
+    private List<Bala> balas =
+            new CopyOnWriteArrayList<>();
 
     private Map<Alvo, List<LeituraSensor>> bufferEsquerda;
     private Map<Alvo, List<LeituraSensor>> bufferDireita;
@@ -87,13 +105,22 @@ public class Jogo extends Thread {
     }
 
     public void atualizar() {
+
         verificarColisoes();
         removerMortos();
-        if (!jogoFinalizado && getAlvos().isEmpty() && !criandoOnda) {
+
+        if (!jogoFinalizado
+                && getAlvos().isEmpty()
+                && !criandoOnda
+                && !otimizando) {
+
             criarOnda();
         }
+
         if (gameView != null) {
-            new Handler(Looper.getMainLooper()).post(() -> gameView.invalidate());
+
+            gameView.postInvalidate();
+
         }
     }
 
@@ -116,6 +143,10 @@ public class Jogo extends Thread {
                 saveGameResult(); // Salvar resultado da partida ao finalizar
             }
         }
+    }
+
+    public void liberarDesenho(){
+        desenhando = false;
     }
 
     private void saveGameResult() {
@@ -328,32 +359,94 @@ public class Jogo extends Thread {
     }
 
     private void removerMortos() {
+
         try {
+
             semaforoAlvos.acquire();
+
             try {
-                alvosEsquerda.removeIf(a -> !a.getRunning());
-                alvosDireita.removeIf(a -> !a.getRunning());
+
+                alvosEsquerda.removeIf(a -> {
+
+                    if(!a.getRunning() && !a.isAlive()) {
+                        a.parar();   // IMPORTANTE
+                        return true;
+                    }
+
+                    return false;
+                });
+
+
+                alvosDireita.removeIf(a -> {
+
+                    if(!a.getRunning() && !a.isAlive()) {
+                        a.parar();
+                        return true;
+                    }
+
+                    return false;
+                });
+
+
             } finally {
                 semaforoAlvos.release();
             }
 
+
             semaforoBalas.acquire();
+
             try {
-                balas.removeIf(p -> !p.getRunning());
+
+                balas.removeIf(p -> {
+
+                    if(!p.getRunning() && !p.isAlive()) {
+                        p.parar();
+                        return true;
+                    }
+
+                    return false;
+                });
+
             } finally {
                 semaforoBalas.release();
             }
 
+
+
             semaforoCanhoes.acquire();
+
             try {
-                canhoesEsquerda.removeIf(c -> !c.getRunning());
-                canhoesDireita.removeIf(c -> !c.getRunning());
+
+                canhoesEsquerda.removeIf(c -> {
+
+                    if(!c.getRunning() && !c.isAlive()) {
+                        c.parar();
+                        return true;
+                    }
+
+                    return false;
+                });
+
+
+                canhoesDireita.removeIf(c -> {
+
+                    if(!c.getRunning() && !c.isAlive()) {
+                        c.parar();
+                        return true;
+                    }
+
+                    return false;
+                });
+
+
             } finally {
                 semaforoCanhoes.release();
             }
 
+
+
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -373,44 +466,66 @@ public class Jogo extends Thread {
     }
 
     public void criarOnda() {
+        Log.d("ONDA",
+                "criando onda. threads=" + Thread.activeCount()
+                        + " alvos E=" + alvosEsquerda.size()
+                        + " alvos D=" + alvosDireita.size()
+                        + " balas=" + balas.size()
+                        + " canhoes E=" + canhoesEsquerda.size()
+                        + " canhoes D=" + canhoesDireita.size());
         if (criandoOnda) {
             return;
         }
-        Log.d("ONDA", "COMECOU CRIAR ONDA");
+        //Log.d("ONDA", "COMECOU CRIAR ONDA");
         criandoOnda = true;
+        Log.d("ONDA","INICIO criação");
         try {
             semaforoAlvos.acquire();
             try {
                 // Garante que o GameView tenha dimensões válidas antes de criar alvos
                 if (gameView.getWidth() == 0 || gameView.getHeight() == 0) {
+                    criandoOnda = false;
+                    semaforoAlvos.release();
                     return;
                 }
                 for (int c = 0; c < numAlvos; c++) {
-                    Log.d("ONDA", "CRIANDO ALVO " + c);
+                   // Log.d("ONDA", "CRIANDO ALVO " + c);
                     Alvo a;
                     if (random.nextInt(100) < 70) {
                         a = new AlvoComum(gameView.getWidth() / 2, gameView.getHeight() / 2, gameView.getWidth(), gameView.getHeight(), gameView, this);
                     } else {
                         a = new AlvoRapido(gameView.getWidth() / 2, gameView.getHeight() / 2, gameView.getWidth(), gameView.getHeight(), gameView, this);
                     }
-                    Log.d("ONDA", "ALVO CRIADO");
+                   // Log.d("ONDA", "ALVO CRIADO");
                     if (a.getLado() == Lado.ESQUERDO) {
                         alvosEsquerda.add(a);
                     } else {
                         alvosDireita.add(a);
                     }
-                    Log.d("ONDA", "ANTES START");
+                   // Log.d("ONDA", "ANTES START");
+                    if (a.getLado() == Lado.ESQUERDO) {
+
+                        alvosEsquerda.add(a);
+
+                    } else {
+
+                        alvosDireita.add(a);
+
+                    }
+
                     a.start();
-                    Log.d("ONDA", "DEPOIS START");
+                    Log.d("THREAD", "alvo criado id="+a.getId());
+                   // Log.d("ONDA", "DEPOIS START");
                 }
                 //numAlvos += 5;
             } finally {
                 criandoOnda = false;
                 semaforoAlvos.release();
+                Log.d("ONDA","FIM criação");
             }
         } catch (InterruptedException e) {
             e.printStackTrace();
-            Log.e("ONDA", "ERRO NA ONDA", e);
+            //Log.e("ONDA", "ERRO NA ONDA", e);
         }
     }
 
@@ -725,6 +840,9 @@ public class Jogo extends Thread {
             Map<Alvo, List<LeituraSensor>> buffer,
             Lado lado
     ) {
+        if(canhoes.size() * alvos.size() == 0){
+            return;
+        }
 
 
         if (canhoes.isEmpty() || alvos.isEmpty()) {
@@ -825,6 +943,9 @@ public class Jogo extends Thread {
         try {
 
             yHat = DataReconciliation.reconcile(y, V, A);
+            if(yHat.length != y.length) {
+                yHat = y;
+            }
 
         } catch (Exception e) {
 
@@ -848,7 +969,11 @@ public class Jogo extends Thread {
 
             for (Alvo a : alvos) {
 
-                double distanciaReconciliada = yHat[indice];
+                double distanciaReconciliada = 0;
+
+                if(indice < yHat.length){
+                    distanciaReconciliada = yHat[indice];
+                }
 
                 if (distanciaReconciliada < 500) {
 
@@ -968,10 +1093,13 @@ public class Jogo extends Thread {
         }
     }
 
-    public List<Canhao> getCanhoes() {
+    public List<Canhao> getCanhoes(){
+
         List<Canhao> todos = new ArrayList<>();
+
         todos.addAll(canhoesEsquerda);
         todos.addAll(canhoesDireita);
+
         return todos;
     }
 
@@ -1029,7 +1157,7 @@ public class Jogo extends Thread {
 
     @Override
     public void run() {
-        setPriority(Thread.MAX_PRIORITY);
+        setPriority(Thread.NORM_PRIORITY);
 
         telemetryScheduler.scheduleAtFixedRate(() -> {
             currentUser = mAuth.getCurrentUser();
@@ -1044,6 +1172,7 @@ public class Jogo extends Thread {
         setPriority(Thread.MAX_PRIORITY);
 
         while (running) {
+            //Log.d("LOOP_JOGO", "rodando");
             long inicio = System.nanoTime();
             if (partidaIniciada && !jogoFinalizado) {
                 atualizar();
@@ -1053,23 +1182,31 @@ public class Jogo extends Thread {
                 // Atualizar o currentUser caso o login tenha sido feito após a inicialização do Jogo
                 currentUser = mAuth.getCurrentUser();
                 if (System.currentTimeMillis() - ultimaOtimizacao >= 10000) {
-
+                    otimizando=true;
+                    Log.d("OTIM", "começou");
+                    Log.d("MEM",
+                            "threads="+Thread.activeCount()+
+                                    " canhoesE="+canhoesEsquerda.size()+
+                                    " canhoesD="+canhoesDireita.size());
                     otimizarLado(canhoesEsquerda,alvosEsquerda,bufferEsquerda,Lado.ESQUERDO);
                     otimizarLado(canhoesDireita,alvosDireita,bufferDireita,Lado.DIREITO);
                     ultimaOtimizacao = System.currentTimeMillis();
+                    otimizando=false;
+                    Log.d("OTIM", "terminou");
                 }
             }
             else {
                 // ADICIONE ISSO AQUI: Mantém a tela ativa/visível antes do jogo começar
-                if (gameView != null) {
-                    new Handler(Looper.getMainLooper()).post(() -> gameView.invalidate());
-                }
+                //if (gameView != null) {
+                    //new Handler(Looper.getMainLooper()).post(() -> gameView.invalidate());
+                //}
             }
             long fim = System.nanoTime();
             long tempo = (fim - inicio) / 1000000;
             try {
                 Thread.sleep(16);
             } catch (InterruptedException e) {
+                //Log.e("ERRO_JOGO", "Morreu", e);
                 e.printStackTrace();
             }
         }

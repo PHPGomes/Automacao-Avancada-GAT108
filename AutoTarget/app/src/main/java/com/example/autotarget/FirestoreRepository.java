@@ -30,12 +30,20 @@ public class FirestoreRepository {
                                Map<String, Object> gameData,
                                FirestoreCallback<Void> callback) {
 
+        // Histórico do usuário
         db.collection("users")
                 .document(userId)
                 .collection("partidas")
                 .add(gameData)
-                .addOnSuccessListener(documentReference ->
-                        callback.onSuccess(null))
+                .addOnSuccessListener(documentReference -> {
+
+                    // Ranking global
+                    db.collection("ranking")
+                            .add(gameData)
+                            .addOnSuccessListener(rankingDoc -> callback.onSuccess(null))
+                            .addOnFailureListener(callback::onFailure);
+
+                })
                 .addOnFailureListener(callback::onFailure);
     }
 
@@ -44,31 +52,26 @@ public class FirestoreRepository {
     // RANKING GLOBAL
     public void getRanking(FirestoreCallback<List<Map<String,Object>>> callback) {
 
-        Log.d("RANK", "BUSCANDO RANKING");
+       // Log.d("RANK", "BUSCANDO RANKING");
 
-
-        db.collectionGroup("partidas")
+        db.collection("ranking")
                 .orderBy("finalScore", Query.Direction.DESCENDING)
                 .limit(10)
                 .get()
                 .addOnSuccessListener(result -> {
 
-
-                    Log.d("RANK", "DOCUMENTOS: " + result.size());
-
+                    //Log.d("RANK", "DOCUMENTOS: " + result.size());
 
                     List<Map<String,Object>> ranking = new ArrayList<>();
 
-                    for(QueryDocumentSnapshot doc : result){
+                    for (QueryDocumentSnapshot doc : result) {
 
-                        Log.d("RANK", doc.getData().toString());
+                       // Log.d("RANK", doc.getData().toString());
 
                         ranking.add(doc.getData());
                     }
 
-
                     callback.onSuccess(ranking);
-
 
                 })
                 .addOnFailureListener(e -> {

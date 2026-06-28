@@ -120,6 +120,9 @@ public class Alvo extends Thread {
     public Lado getLado() { return lado; }
 
     public boolean getRunning() { return running; }
+    public void setRunning(Boolean set) {
+        running = set;
+    }
 
     public int getRaio() { return raio; }
     public GameView getGameView() { return gameView; }
@@ -130,14 +133,13 @@ public class Alvo extends Thread {
     }
 
     public void parar() {
-        Log.d("THREADS", "Parou Morreu Acabou ");
+       // Log.d("THREADS", "Parou Morreu Acabou ");
         running = false;
     }
 
     @Override
     public void run() {
         setPriority(Thread.MAX_PRIORITY);
-        Log.d("THREADS", "ALVO INICIOU");
         while (running) {
 
             long inicio = System.nanoTime();
@@ -150,16 +152,19 @@ public class Alvo extends Thread {
             }
             long fim = System.nanoTime();
             long tempo = (fim - inicio) / 1000000;
+            /*
             if (gameView != null) {
                 gameView.postInvalidate();
             }
+
+             */
 
             try {
                 Thread.sleep(16);
             } catch (InterruptedException e) {
                 e.printStackTrace();
+                break;
             }
         }
-        Log.d("THREADS", "ALVO TERMINOU");
     }
 }

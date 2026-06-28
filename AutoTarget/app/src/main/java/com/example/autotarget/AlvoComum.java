@@ -27,7 +27,8 @@ public class AlvoComum extends Alvo {
             try {
                 Thread.sleep(16);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                super.setRunning(false);
+                return;
             }
         }
     }

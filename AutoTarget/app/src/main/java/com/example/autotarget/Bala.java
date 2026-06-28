@@ -121,13 +121,13 @@ public class Bala extends Thread {
         return canhaoAtirador;
     }
 
-    public void parar() {
+    public void parar(){
         running = false;
     }
 
     @Override
     public void run() {
-        Log.d("THREADS", "BALA INICIOU");
+       // Log.d("THREADS", "BALA INICIOU");
         setPriority(Thread.MIN_PRIORITY);
         while (running) {
             long inicio = System.nanoTime();
@@ -141,9 +141,10 @@ public class Bala extends Thread {
             try {
                 Thread.sleep(16);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                running = false;
+                break;
             }
         }
-        Log.d("THREADS", "BALA TERMINOU");
+       // Log.d("THREADS", "BALA TERMINOU");
     }
 }

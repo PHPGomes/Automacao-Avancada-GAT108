@@ -130,7 +130,7 @@ public class Canhao extends Thread {
         return running;
     }
 
-    public void parar() {
+    public void parar(){
         running = false;
     }
 
@@ -208,14 +208,17 @@ public class Canhao extends Thread {
             if (numBalas <= 0) {
                 running = false;
             }
-
+/*
             if (gameView != null) {
                 gameView.postInvalidate();
             }
+
+ */
             try {
-                Thread.sleep(16);
+                Thread.sleep(50);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                running = false;
+                break;
             }
         }
     }
