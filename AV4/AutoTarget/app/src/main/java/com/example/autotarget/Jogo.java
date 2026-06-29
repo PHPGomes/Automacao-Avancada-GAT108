@@ -1040,7 +1040,7 @@ public class Jogo extends Thread {
     private void finalizarJogo() {
 
         performanceMonitor.finalizar();
-        
+
         jogoFinalizado = true;
 
         for (Alvo a : getAlvos()) {
@@ -1054,6 +1054,31 @@ public class Jogo extends Thread {
         for (Bala b : balas) {
             b.parar();
         }
+
+        Executors.newSingleThreadExecutor().execute(() -> {
+
+            Partida p = new Partida();
+
+            p.usuario = currentUser.getEmail();
+
+            p.pontosEsquerda = pontuacao1;
+
+            p.pontosDireita = pontuacao2;
+
+            p.canhoesEsquerda = canhoesEsquerda.size();
+
+            p.canhoesDireita = canhoesDireita.size();
+
+            p.tempo = tempoInicial - tempoRestante;
+
+            p.data = System.currentTimeMillis();
+
+            DatabaseProvider
+                    .get(gameView.getContext())
+                    .partidaDao()
+                    .inserir(p);
+
+        });
 
 
     }

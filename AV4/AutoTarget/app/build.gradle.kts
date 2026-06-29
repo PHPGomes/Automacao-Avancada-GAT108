@@ -5,7 +5,6 @@ plugins {
 
 android {
     namespace = "com.example.autotarget"
-    // Mantive a versão 34 que é estável, mas se o seu Android Studio baixar a 36, pode usar a sua original
     compileSdk = 34
 
     defaultConfig {
@@ -16,7 +15,6 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
     }
 
     buildTypes {
@@ -28,6 +26,7 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -35,17 +34,22 @@ android {
 }
 
 dependencies {
+
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)
     implementation(libs.constraintlayout)
 
-    // --- DEPENDÊNCIAS DO FIREBASE ---
+    // ROOM
+    implementation("androidx.room:room-runtime:2.6.1")
+    annotationProcessor("androidx.room:room-compiler:2.6.1")
+
+    // FIREBASE
     implementation(platform("com.google.firebase:firebase-bom:32.2.0"))
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
 
-    // --- MATEMÁTICA (RECONCILIAÇÃO) ---
+    // APACHE COMMONS MATH
     implementation("org.apache.commons:commons-math3:3.6.1")
 
     testImplementation(libs.junit)
