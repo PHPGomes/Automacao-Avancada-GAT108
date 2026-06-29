@@ -1,0 +1,141 @@
+package com.example.autotarget;
+
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.util.AttributeSet;
+import android.util.Log;
+import android.view.View;
+
+import java.util.ArrayList;
+
+public class GameView extends View {
+
+
+    private Jogo jogo;
+    private Paint texto1;
+    private Paint texto2;
+    private Paint line;
+    private Paint ladoEsquerdo;
+    private Paint ladoDireito;
+
+
+
+    public GameView(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        texto1 = new Paint();
+        texto2 = new Paint();
+        line = new Paint();
+        ladoEsquerdo = new Paint();
+        ladoDireito = new Paint();
+        ladoEsquerdo.setColor(Color.rgb(180,220,255));
+        ladoDireito.setColor(Color.rgb(255,200,200));
+        line.setColor(Color.BLACK);
+        line.setStrokeWidth(5);
+        texto1.setColor(Color.BLACK);
+        texto1.setTextSize(60);
+        texto2.setColor(Color.BLACK);
+        texto2.setTextSize(60);
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        if (jogo == null) {
+            jogo = new Jogo(this);
+        }
+    }
+
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        if (jogo != null && !jogo.isAlive()) {
+            jogo.start();
+        }
+    }
+
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+
+        if (getWidth() == 0 || getHeight() == 0 || jogo == null) {
+            return;
+        }
+        super.onDraw(canvas);
+
+        if(jogo != null){
+            jogo.liberarDesenho();
+        }
+        canvas.drawColor(Color.BLACK);
+
+        canvas.drawRect(0, 0, getWidth()/2, getHeight(), ladoEsquerdo);
+        canvas.drawRect(getWidth()/2, 0, getWidth(), getHeight(), ladoDireito);
+        canvas.drawLine(getWidth() / 2, 0, getWidth() / 2, getHeight(), line);
+
+        canvas.drawText("Pontos: " + jogo.getPontuacao1(), 50, 80, texto1);
+        canvas.drawText("Pontos: " + jogo.getPontuacao2(), 590, 80, texto2);
+        canvas.drawText("Energia: " + (int) jogo.getEnergiaEsquerda(),50,150,texto1);
+        canvas.drawText("Energia: " + (int) jogo.getEnergiaDireita(),590,150,texto2);
+        canvas.drawText("Tempo: " + jogo.getTempoRestante(),getWidth()/2 - 460,getHeight() - 200,texto1);
+        //("GAMEVIEW", "ANTES DOS OBJETOS");
+
+
+
+        for (Canhao c : jogo.getCanhoes()) {
+            c.draw(canvas);
+        }
+
+
+        for (Alvo a : jogo.getAlvos()) {
+            a.draw(canvas);
+        }
+
+        for (Bala b : jogo.getBalas()) {
+            b.draw(canvas);
+        }
+
+
+       // Log.d("GAMEVIEW", "DEPOIS DOS OBJETOS");
+        if (jogo.isJogoFinalizado()) {
+
+            Paint vencedor = new Paint();
+            vencedor.setTextSize(100);
+            vencedor.setColor(Color.WHITE);
+            String texto;
+            if (jogo.getPontuacao1() > jogo.getPontuacao2()) {
+                texto = "ESQUERDA VENCEU";
+                canvas.drawText(texto,getWidth()/2 - 440,getHeight()/2,vencedor);
+            } else if (jogo.getPontuacao2() > jogo.getPontuacao1()) {
+                texto = "DIREITA VENCEU";
+                canvas.drawText(texto,getWidth()/2 - 380,getHeight()/2,vencedor);
+            } else {
+                texto = "EMPATE";
+                canvas.drawText(texto,getWidth()/2 - 205,getHeight()/2,vencedor);
+            }
+        }
+    }
+
+    @Override
+    public void invalidate() {
+
+        if(!isShown()){
+            return;
+        }
+
+        super.invalidate();
+    }
+
+
+    public void adicionarCanhao(Lado lado) {
+        jogo.adicionarCanhao(lado);
+        invalidate();
+    }
+    public void iniciarJogo() {
+        jogo.iniciarPartida();
+    }
+
+    public Jogo getJogo() {
+        return jogo;
+    }
+}

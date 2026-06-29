@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "670765525188",
+    "project_id": "autotarget-fc68b",
+    "storage_bucket": "autotarget-fc68b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:670765525188:android:96aa3587c901bcbcac0191",
+        "android_client_info": {
+          "package_name": "com.example.autotarget"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA6BWDXc3UVsiGHMeJRwcWz8nEjEa29BUU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
