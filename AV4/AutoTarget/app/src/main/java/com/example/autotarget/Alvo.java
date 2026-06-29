@@ -6,7 +6,7 @@ import android.util.Log;
 
 import java.util.Random;
 
-public class Alvo extends Thread {
+public class Alvo implements Runnable {
 
     private int x, y, raio, tamX, tamY;
     protected int vel;
@@ -133,16 +133,19 @@ public class Alvo extends Thread {
     }
 
     public void parar() {
-       // Log.d("THREADS", "Parou Morreu Acabou ");
         running = false;
     }
 
     @Override
     public void run() {
-        setPriority(Thread.MAX_PRIORITY);
+
         while (running) {
 
             long inicio = System.nanoTime();
+            // Adicionado para garantir que o alvo não continue a mover se o jogo estiver finalizado
+            if (!running) {
+                return;
+            }
             if (tamX > 0 && tamY > 0 && desX == 0 && desY == 0) {
                 Atualizadestino();
             }

@@ -50,8 +50,8 @@ public class GameView extends View {
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        if (jogo != null && !jogo.isAlive()) {
-            jogo.start();
+        if (jogo != null) {
+            jogo.iniciarLoopPrincipal();
         }
     }
 
@@ -96,7 +96,7 @@ public class GameView extends View {
         }
 
 
-       // Log.d("GAMEVIEW", "DEPOIS DOS OBJETOS");
+        // Log.d("GAMEVIEW", "DEPOIS DOS OBJETOS");
         if (jogo.isJogoFinalizado()) {
 
             Paint vencedor = new Paint();

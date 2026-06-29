@@ -8,7 +8,7 @@ import android.graphics.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Canhao extends Thread {
+public class Canhao implements Runnable {
 
     private int x, y, size, numBalas;
     private int destinoX;
@@ -198,9 +198,12 @@ public class Canhao extends Thread {
 
     @Override
     public void run() {
-        setPriority(Thread.NORM_PRIORITY);
+
         while (running) {
             long inicio = System.nanoTime();
+            if (!running) {
+                return;
+            }
             mover();
             atirar();
             long fim = System.nanoTime();
