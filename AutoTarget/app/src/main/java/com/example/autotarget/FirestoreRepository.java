@@ -30,21 +30,38 @@ public class FirestoreRepository {
                                Map<String, Object> gameData,
                                FirestoreCallback<Void> callback) {
 
-        // Histórico do usuário
+        Log.d("FIRESTORE", "SALVANDO PARTIDA");
+
         db.collection("users")
                 .document(userId)
                 .collection("partidas")
                 .add(gameData)
                 .addOnSuccessListener(documentReference -> {
 
-                    // Ranking global
+                    Log.d("FIRESTORE", "PARTIDA SALVA NO USUARIO");
+
                     db.collection("ranking")
                             .add(gameData)
-                            .addOnSuccessListener(rankingDoc -> callback.onSuccess(null))
-                            .addOnFailureListener(callback::onFailure);
+                            .addOnSuccessListener(rankingDoc -> {
+
+                                Log.d("FIRESTORE", "RANKING SALVO");
+
+                                callback.onSuccess(null);
+                            })
+                            .addOnFailureListener(e -> {
+
+                                Log.e("FIRESTORE", "ERRO RANKING", e);
+
+                                callback.onFailure(e);
+                            });
 
                 })
-                .addOnFailureListener(callback::onFailure);
+                .addOnFailureListener(e -> {
+
+                    Log.e("FIRESTORE", "ERRO PARTIDA", e);
+
+                    callback.onFailure(e);
+                });
     }
 
 

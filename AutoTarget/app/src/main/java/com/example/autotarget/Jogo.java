@@ -359,91 +359,57 @@ public class Jogo extends Thread {
     }
 
     private void removerMortos() {
-
         try {
-
             semaforoAlvos.acquire();
-
             try {
-
                 alvosEsquerda.removeIf(a -> {
-
                     if(!a.getRunning() && !a.isAlive()) {
                         a.parar();   // IMPORTANTE
                         return true;
                     }
-
                     return false;
                 });
-
-
                 alvosDireita.removeIf(a -> {
-
                     if(!a.getRunning() && !a.isAlive()) {
                         a.parar();
                         return true;
                     }
-
                     return false;
                 });
-
-
             } finally {
                 semaforoAlvos.release();
             }
-
-
             semaforoBalas.acquire();
-
             try {
-
                 balas.removeIf(p -> {
-
                     if(!p.getRunning() && !p.isAlive()) {
                         p.parar();
                         return true;
                     }
-
                     return false;
                 });
-
             } finally {
                 semaforoBalas.release();
             }
-
-
-
             semaforoCanhoes.acquire();
-
             try {
-
                 canhoesEsquerda.removeIf(c -> {
-
                     if(!c.getRunning() && !c.isAlive()) {
                         c.parar();
                         return true;
                     }
-
                     return false;
                 });
-
-
                 canhoesDireita.removeIf(c -> {
-
                     if(!c.getRunning() && !c.isAlive()) {
                         c.parar();
                         return true;
                     }
-
                     return false;
                 });
-
-
             } finally {
                 semaforoCanhoes.release();
             }
-
-
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -485,7 +451,6 @@ public class Jogo extends Thread {
                 // Garante que o GameView tenha dimensões válidas antes de criar alvos
                 if (gameView.getWidth() == 0 || gameView.getHeight() == 0) {
                     criandoOnda = false;
-                    semaforoAlvos.release();
                     return;
                 }
                 for (int c = 0; c < numAlvos; c++) {
@@ -502,17 +467,6 @@ public class Jogo extends Thread {
                     } else {
                         alvosDireita.add(a);
                     }
-                   // Log.d("ONDA", "ANTES START");
-                    if (a.getLado() == Lado.ESQUERDO) {
-
-                        alvosEsquerda.add(a);
-
-                    } else {
-
-                        alvosDireita.add(a);
-
-                    }
-
                     a.start();
                     Log.d("THREAD", "alvo criado id="+a.getId());
                    // Log.d("ONDA", "DEPOIS START");
@@ -1155,66 +1109,6 @@ public class Jogo extends Thread {
         for (Bala b : balas) b.parar();
     }
 
-    @Override
-    public void run() {
-        setPriority(Thread.NORM_PRIORITY);
-
-        telemetryScheduler.scheduleAtFixedRate(() -> {
-            currentUser = mAuth.getCurrentUser();
-            if (currentUser != null && partidaIniciada) {
-                simulateTemperature();
-                saveTelemetryData();
-                applyTemperatureFeedback();
-            }
-        }, TELEMETRY_INTERVAL_SECONDS, TELEMETRY_INTERVAL_SECONDS, TimeUnit.SECONDS);
-
-        // delay inicial igual ao intervalo, evita o 0 depreciado
-        setPriority(Thread.MAX_PRIORITY);
-
-        while (running) {
-            //Log.d("LOOP_JOGO", "rodando");
-            long inicio = System.nanoTime();
-            if (partidaIniciada && !jogoFinalizado) {
-                atualizar();
-                atualizarTempo();
-                coletarDadosSensores();
-                atualizarMatrizIncidencia();
-                // Atualizar o currentUser caso o login tenha sido feito após a inicialização do Jogo
-                currentUser = mAuth.getCurrentUser();
-                if (System.currentTimeMillis() - ultimaOtimizacao >= 10000) {
-                    otimizando=true;
-                    Log.d("OTIM", "começou");
-                    Log.d("MEM",
-                            "threads="+Thread.activeCount()+
-                                    " canhoesE="+canhoesEsquerda.size()+
-                                    " canhoesD="+canhoesDireita.size());
-                    otimizarLado(canhoesEsquerda,alvosEsquerda,bufferEsquerda,Lado.ESQUERDO);
-                    otimizarLado(canhoesDireita,alvosDireita,bufferDireita,Lado.DIREITO);
-                    ultimaOtimizacao = System.currentTimeMillis();
-                    otimizando=false;
-                    Log.d("OTIM", "terminou");
-                }
-            }
-            else {
-                // ADICIONE ISSO AQUI: Mantém a tela ativa/visível antes do jogo começar
-                //if (gameView != null) {
-                    //new Handler(Looper.getMainLooper()).post(() -> gameView.invalidate());
-                //}
-            }
-            long fim = System.nanoTime();
-            long tempo = (fim - inicio) / 1000000;
-            try {
-                Thread.sleep(16);
-            } catch (InterruptedException e) {
-                //Log.e("ERRO_JOGO", "Morreu", e);
-                e.printStackTrace();
-            }
-        }
-        // Ao parar o jogo, desligar o scheduler de telemetria
-        telemetryScheduler.shutdownNow();
-    }
-
-
     public void setCurrentUser(FirebaseUser user) {
         this.currentUser = user;
     }
@@ -1234,4 +1128,66 @@ public class Jogo extends Thread {
     public double getCurrentTemperature() {
         return currentTemperature;
     }
+
+    @Override
+    public void run() {
+        Log.d("JOGO", "Thread do jogo iniciada. id=" + Thread.currentThread().getId());
+        setPriority(Thread.NORM_PRIORITY);
+        Log.d("TELEMETRIA", "Scheduler iniciado");
+        telemetryScheduler.scheduleAtFixedRate(() -> {
+            currentUser = mAuth.getCurrentUser();
+            if (currentUser != null && partidaIniciada) {
+                simulateTemperature();
+                saveTelemetryData();
+                applyTemperatureFeedback();
+            }
+        }, TELEMETRY_INTERVAL_SECONDS, TELEMETRY_INTERVAL_SECONDS, TimeUnit.SECONDS);
+
+        // delay inicial igual ao intervalo, evita o 0 depreciado
+        setPriority(Thread.MAX_PRIORITY);
+
+        while (running) {
+            Log.d("JOGO", "Loop");
+            Log.d("THREADS", "Ativas = " + Thread.activeCount());
+            //Log.d("LOOP_JOGO", "rodando");
+            long inicio = System.nanoTime();
+            if (partidaIniciada && !jogoFinalizado) {
+                atualizar();
+                atualizarTempo();
+                coletarDadosSensores();
+                atualizarMatrizIncidencia();
+                // Atualizar o currentUser caso o login tenha sido feito após a inicialização do Jogo
+                currentUser = mAuth.getCurrentUser();
+
+
+                if (System.currentTimeMillis() - ultimaOtimizacao >= 10000) {
+                    otimizando=true;
+                    otimizarLado(canhoesEsquerda,alvosEsquerda,bufferEsquerda,Lado.ESQUERDO);
+                    otimizarLado(canhoesDireita,alvosDireita,bufferDireita,Lado.DIREITO);
+                    ultimaOtimizacao = System.currentTimeMillis();
+                    otimizando=false;
+                }
+
+
+            }
+            else {
+                // ADICIONE ISSO AQUI: Mantém a tela ativa/visível antes do jogo começar
+                //if (gameView != null) {
+                    //new Handler(Looper.getMainLooper()).post(() -> gameView.invalidate());
+                //}
+            }
+            long fim = System.nanoTime();
+            long tempo = (fim - inicio) / 1000000;
+            try {
+                Thread.sleep(16);
+            } catch (InterruptedException e) {
+                Log.e("JOGO", "ERRO NO LOOP", e);
+            }
+        }
+        // Ao parar o jogo, desligar o scheduler de telemetria
+        telemetryScheduler.shutdownNow();
+    }
+
+
+
 }
