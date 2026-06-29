@@ -1,91 +1,48 @@
 package com.example.autotarget;
 
-import android.graphics.Paint;
+import android.util.Log;
+
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.Semaphore;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import android.os.Handler;
-import android.os.Looper;
-import android.util.Log;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Jogo extends Thread {
 
     private FirebaseAuth mAuth;
     private FirebaseUser currentUser;
-    private FirestoreRepository firestoreRepository;
-    private ScheduledExecutorService telemetryScheduler;
-    private volatile boolean desenhando = false;
-    private List<MedidaRecon> medidasRecon = new ArrayList<>();
 
+    private FirestoreRepository firestoreRepository;
+
+    private ScheduledExecutorService telemetryScheduler;
 
     private PerformanceMonitor performanceMonitor;
 
-    private final List<Canhao> canhoesDesenho = new ArrayList<>();
-    private final List<Alvo> alvosDesenho = new ArrayList<>();
-    private final List<Bala> balasDesenho = new ArrayList<>();
-
     private boolean otimizando = false;
-
-    private Handler handler = new Handler(Looper.getMainLooper());
-
-    private double currentTemperature = 25.0; // Temperatura inicial simulada
-    private static final double TEMP_THRESHOLD = 40.0;
-    private static final long TELEMETRY_INTERVAL_SECONDS = 10;
-    private boolean isOverheating = false;
-
-    private static final double ENERGY_ADD_THRESHOLD = 25.0; // Limiar para adicionar canhão
-    private static final double ENERGY_REMOVE_THRESHOLD = 10.0; // Limiar para remover canhão
-
-    private List<Canhao> canhoesEsquerda =
-            new CopyOnWriteArrayList<>();
-
-    private List<Canhao> canhoesDireita =
-            new CopyOnWriteArrayList<>();
-
-    private List<Alvo> alvosEsquerda =
-            new CopyOnWriteArrayList<>();
-    private List<Alvo> alvosDireita =
-            new CopyOnWriteArrayList<>();
-
-    private List<Bala> balas =
-            new CopyOnWriteArrayList<>();
-
-    private Map<Alvo, List<LeituraSensor>> bufferEsquerda;
-    private Map<Alvo, List<LeituraSensor>> bufferDireita;
-
-    private int pontuacao1, pontuacao2;
-    private int numAlvos;
-    private double[][] matrizIncidencia;
-    private boolean running = true;
-    private GameView gameView;
-    private Random random = new Random();
-    private int iniEnergiaEsquerda = 100;
-    private int iniEnergiaDireita = 100;
-    private int energiaEsquerda;
-    private int energiaDireita;
-    private int tempoRestante;
-    private int tempoInicial = 60;
-    private long ultimoSegundo;
-    private long ultimaColeta;
-    private long ultimaOtimizacao;
     private boolean jogoFinalizado = false;
     private boolean partidaIniciada = false;
     private boolean criandoOnda = false;
 
+    private double currentTemperature = 25.0;
 
-    private Semaphore semaforoAlvos = new Semaphore(1);
-    private Semaphore semaforoBalas = new Semaphore(1);
-    private Semaphore semaforoCanhoes = new Semaphore(1);
+    private boolean isOverheating = false;
+
+    private static final double TEMP_THRESHOLD = 40.0;
+
+    private static final long TELEMETRY_INTERVAL_SECONDS = 10;
+
+    private static final double ENERGY_ADD_THRESHOLD = 25.0;
+
+    private static final double ENERGY_REMOVE_THRESHOLD = 10.0;
 
     public Jogo(GameView gameView) {
         mAuth = FirebaseAuth.getInstance();
@@ -93,6 +50,7 @@ public class Jogo extends Thread {
         firestoreRepository = new FirestoreRepository();
         telemetryScheduler = Executors.newSingleThreadScheduledExecutor();
         this.gameView = gameView;
+        performanceMonitor = new PerformanceMonitor(numAlvos);
         canhoesEsquerda = new CopyOnWriteArrayList<>();
         canhoesDireita = new CopyOnWriteArrayList<>();
         alvosEsquerda = new CopyOnWriteArrayList<>();
@@ -110,22 +68,16 @@ public class Jogo extends Thread {
     }
 
     public void atualizar() {
-
         verificarColisoes();
         removerMortos();
-
         if (!jogoFinalizado
                 && getAlvos().isEmpty()
                 && !criandoOnda
                 && !otimizando) {
-
             criarOnda();
         }
-
         if (gameView != null) {
-
             gameView.postInvalidate();
-
         }
     }
 
@@ -135,82 +87,54 @@ public class Jogo extends Thread {
     }
 
     private void atualizarTempo() {
-
-        if (System.currentTimeMillis() - ultimoSegundo >= 1000) {
-
-            tempoRestante--;
-
-            ultimoSegundo = System.currentTimeMillis();
-
-            if (tempoRestante <= 0) {
-
-                finalizarJogo();
-                saveGameResult(); // Salvar resultado da partida ao finalizar
-            }
+        if (System.currentTimeMillis() - ultimoSegundo < 1000) {
+            return;
+        }
+        ultimoSegundo = System.currentTimeMillis();
+        tempoRestante--;
+        if (tempoRestante <= 0) {
+            finalizarJogo();
+            saveGameResult();
         }
     }
-
-    public void liberarDesenho(){
-        desenhando = false;
-    }
-
     private void saveGameResult() {
         if (currentUser == null) {
             return; // Não salva se não houver usuário logado
         }
-
         Map<String, Object> gameData = new HashMap<>();
         gameData.put("timestamp", System.currentTimeMillis());
         gameData.put("pontuacaoEsquerda", pontuacao1);
         gameData.put("pontuacaoDireita", pontuacao2);
         gameData.put("alvosAbatidos", numAlvos - 5); // Exemplo, ajustar conforme a lógica real
         List<Map<String, Object>> configuracoesCanhoes = new ArrayList<>();
-
         for (Canhao canhao : getCanhoes()) {
-
             Map<String, Object> dadosCanhao = new HashMap<>();
-
             dadosCanhao.put("x", canhao.getX());
             dadosCanhao.put("y", canhao.getY());
             dadosCanhao.put("lado", canhao.getLado().toString());
             dadosCanhao.put("capacidade", canhao.getCapacidade());
-
             configuracoesCanhoes.add(dadosCanhao);
         }
-
         gameData.put("configuracaoCanhoes", configuracoesCanhoes);
-
         // TODO: Adicionar configurações dos canhões (posição, tipo, etc.)
-
         // Criptografar dados sensíveis
-
-
-
         try {
-
             int score = Math.max(pontuacao1, pontuacao2);
-
             String nomeJogador = currentUser.getEmail();
-
             if (nomeJogador == null) {
                 nomeJogador = "Jogador";
             }
-
             String encryptedPlayerName = Cryptography.encrypt(nomeJogador);
             String encryptedScore = Cryptography.encrypt(String.valueOf(score));
-
             gameData.put("playerName", encryptedPlayerName);
-
             // usado para ordenar o ranking
             gameData.put("finalScore", score);
-
             // usado para demonstrar criptografia
             gameData.put("finalScoreEncrypted", encryptedScore);
-
         } catch (Exception e) {
-
-            e.printStackTrace();
-
+            Log.e("SAVE_GAME",
+                    "Erro ao criptografar",
+                    e);
             gameData.put("playerName", "Jogador");
 
             gameData.put("finalScore", Math.max(pontuacao1, pontuacao2));
@@ -224,7 +148,6 @@ public class Jogo extends Thread {
             public void onSuccess(Void result) {
                 // Log ou feedback de sucesso
             }
-
             @Override
             public void onFailure(Exception e) {
                 e.printStackTrace();
@@ -235,7 +158,9 @@ public class Jogo extends Thread {
     private void simulateTemperature() {
         // Simula variação de temperatura
         currentTemperature += (random.nextDouble() * 2) - 1; // Varia entre -1 e +1
-        if (currentTemperature < 20) currentTemperature = 20;
+        currentTemperature =
+                Math.max(20,
+                        Math.min(50,currentTemperature));
         if (currentTemperature > 50) currentTemperature = 50;
     }
 
@@ -259,18 +184,11 @@ public class Jogo extends Thread {
     }
 
     private void applyTemperatureFeedback() {
-        if (currentTemperature > TEMP_THRESHOLD) {
-            isOverheating = true;
-            // Aumentar o delay de tiro dos canhões (implementado na classe Canhao)
-        } else {
-            isOverheating = false;
-        }
+        isOverheating =  currentTemperature > TEMP_THRESHOLD;
     }
-
     public boolean isOverheating() {
         return isOverheating;
     }
-
     public synchronized boolean consumirEnergia(Lado lado) {
 
         if (lado == Lado.ESQUERDO) {
@@ -286,206 +204,270 @@ public class Jogo extends Thread {
         energiaDireita--;
         return true;
     }
-
     private void verificarColisoes() {
-        for (Alvo a : alvosEsquerda) {
+        verificarColisoes(alvosEsquerda);
+        verificarColisoes(alvosDireita);
+    }
 
-            if (a == null || !a.getRunning()) continue;
+    private void verificarColisoes(List<Alvo> alvos) {
 
-            for (Bala b : balas) {
+        for (Alvo alvo : alvos) {
 
-                if (b == null || !b.getRunning()) continue;
+            if (alvo == null || !alvo.getRunning()) {
+                continue;
+            }
 
-                synchronized (a) {
+            for (Bala bala : balas) {
 
-                    if (!a.getRunning() || !b.getRunning()) continue;
+                if (bala == null || !bala.getRunning()) {
+                    continue;
+                }
 
-                    int dx = b.getX() - a.getX();
-                    int dy = b.getY() - a.getY();
+                synchronized (alvo) {
 
-                    double distancia = Math.sqrt(dx * dx + dy * dy);
+                    if (!alvo.getRunning() || !bala.getRunning()) {
+                        continue;
+                    }
 
-                    if (distancia < a.getRaio()) {
+                    double distancia = calcularDistancia(
+                            bala.getX(),
+                            bala.getY(),
+                            alvo.getX(),
+                            alvo.getY()
+                    );
 
-                        a.parar();
-                        b.parar();
+                    if (distancia < alvo.getRaio()) {
 
-                        Canhao canhaoAtirador = b.getCanhaoAtirador();
+                        alvo.parar();
+                        bala.parar();
 
-                        if (canhaoAtirador != null) {
-
-                            if (canhaoAtirador.getLado() == Lado.ESQUERDO) {
-                                pontuacao1++;
-                            } else {
-                                pontuacao2++;
-                            }
-                        }
+                        registrarPontuacao(bala);
                     }
                 }
             }
         }
+    }
 
-        for (Alvo a : alvosDireita) {
+    private double calcularDistancia(double x1, double y1, double x2, double y2) {
 
-            if (a == null || !a.getRunning()) continue;
+        double dx = x1 - x2;
+        double dy = y1 - y2;
 
-            for (Bala b : balas) {
+        return Math.sqrt(dx * dx + dy * dy);
+    }
 
-                if (b == null || !b.getRunning()) continue;
+    private void registrarPontuacao(Bala bala) {
 
-                synchronized (a) {
+        Canhao canhaoAtirador = bala.getCanhaoAtirador();
 
-                    if (!a.getRunning() || !b.getRunning()) continue;
+        if (canhaoAtirador == null) {
+            return;
+        }
 
-                    int dx = b.getX() - a.getX();
-                    int dy = b.getY() - a.getY();
-
-                    double distancia = Math.sqrt(dx * dx + dy * dy);
-
-                    if (distancia < a.getRaio()) {
-
-                        a.parar();
-                        b.parar();
-
-                        Canhao canhaoAtirador = b.getCanhaoAtirador();
-
-                        if (canhaoAtirador != null) {
-
-                            if (canhaoAtirador.getLado() == Lado.ESQUERDO) {
-                                pontuacao1++;
-                            } else {
-                                pontuacao2++;
-                            }
-                        }
-                    }
-                }
-            }
+        if (canhaoAtirador.getLado() == Lado.ESQUERDO) {
+            pontuacao1++;
+        } else {
+            pontuacao2++;
         }
     }
 
     private void removerMortos() {
         try {
-            semaforoAlvos.acquire();
-            try {
-                alvosEsquerda.removeIf(a -> {
-                    if(!a.getRunning() && !a.isAlive()) {
-                        a.parar();   // IMPORTANTE
-                        return true;
-                    }
-                    return false;
-                });
-                alvosDireita.removeIf(a -> {
-                    if(!a.getRunning() && !a.isAlive()) {
-                        a.parar();
-                        return true;
-                    }
-                    return false;
-                });
-            } finally {
-                semaforoAlvos.release();
-            }
-            semaforoBalas.acquire();
-            try {
-                balas.removeIf(p -> {
-                    if(!p.getRunning() && !p.isAlive()) {
-                        p.parar();
-                        return true;
-                    }
-                    return false;
-                });
-            } finally {
-                semaforoBalas.release();
-            }
-            semaforoCanhoes.acquire();
-            try {
-                canhoesEsquerda.removeIf(c -> {
-                    if(!c.getRunning() && !c.isAlive()) {
-                        c.parar();
-                        return true;
-                    }
-                    return false;
-                });
-                canhoesDireita.removeIf(c -> {
-                    if(!c.getRunning() && !c.isAlive()) {
-                        c.parar();
-                        return true;
-                    }
-                    return false;
-                });
-            } finally {
-                semaforoCanhoes.release();
-            }
+
+            limparAlvosMortos();
+            limparBalasMortas();
+            limparCanhoesMortos();
 
         } catch (InterruptedException e) {
+
             Thread.currentThread().interrupt();
+
+            Log.e("JOGO",
+                    "Thread interrompida ao remover objetos mortos",
+                    e);
         }
     }
 
-    public void criarBala(int x, int y, int alvoX, int alvoY, Canhao canhaoAtirador) {
+    private void limparAlvosMortos() throws InterruptedException {
+
+        semaforoAlvos.acquire();
+
         try {
+
+            alvosEsquerda.removeIf(this::objetoThreadMorto);
+            alvosDireita.removeIf(this::objetoThreadMorto);
+
+        } finally {
+
+            semaforoAlvos.release();
+        }
+    }
+
+    private void limparBalasMortas() throws InterruptedException {
+
+        semaforoBalas.acquire();
+
+        try {
+
+            balas.removeIf(this::objetoThreadMorto);
+
+        } finally {
+
+            semaforoBalas.release();
+        }
+    }
+
+    private void limparCanhoesMortos() throws InterruptedException {
+
+        semaforoCanhoes.acquire();
+
+        try {
+
+            canhoesEsquerda.removeIf(this::objetoThreadMorto);
+            canhoesDireita.removeIf(this::objetoThreadMorto);
+
+        } finally {
+
+            semaforoCanhoes.release();
+        }
+    }
+
+    private boolean objetoThreadMorto(Thread objeto) {
+
+        if (objeto == null) {
+            return true;
+        }
+
+        boolean parado = false;
+
+        if (objeto instanceof Alvo) {
+            parado = !((Alvo) objeto).getRunning();
+        } else if (objeto instanceof Bala) {
+            parado = !((Bala) objeto).getRunning();
+        } else if (objeto instanceof Canhao) {
+            parado = !((Canhao) objeto).getRunning();
+        }
+
+        return parado && !objeto.isAlive();
+    }
+
+    public void criarBala(int x, int y, int alvoX, int alvoY, Canhao canhaoAtirador) {
+
+        try {
+
             semaforoBalas.acquire();
+
             try {
-                Bala b = new Bala(x, y, alvoX, alvoY, gameView, canhaoAtirador);
-                balas.add(b);
-                b.start();
+
+                Bala bala = new Bala(
+                        x,
+                        y,
+                        alvoX,
+                        alvoY,
+                        gameView,
+                        canhaoAtirador
+                );
+
+                balas.add(bala);
+                bala.start();
+
             } finally {
+
                 semaforoBalas.release();
             }
+
         } catch (InterruptedException e) {
-            e.printStackTrace();
+
+            Thread.currentThread().interrupt();
+
+            Log.e("JOGO",
+                    "Erro ao criar bala",
+                    e);
         }
     }
 
     public void criarOnda() {
-        Log.d("ONDA",
-                "criando onda. threads=" + Thread.activeCount()
-                        + " alvos E=" + alvosEsquerda.size()
-                        + " alvos D=" + alvosDireita.size()
-                        + " balas=" + balas.size()
-                        + " canhoes E=" + canhoesEsquerda.size()
-                        + " canhoes D=" + canhoesDireita.size());
+
         if (criandoOnda) {
             return;
         }
-        //Log.d("ONDA", "COMECOU CRIAR ONDA");
-        criandoOnda = true;
-        Log.d("ONDA","INICIO criação");
-        try {
-            semaforoAlvos.acquire();
-            try {
-                // Garante que o GameView tenha dimensões válidas antes de criar alvos
-                if (gameView.getWidth() == 0 || gameView.getHeight() == 0) {
-                    criandoOnda = false;
-                    return;
-                }
-                for (int c = 0; c < numAlvos; c++) {
-                   // Log.d("ONDA", "CRIANDO ALVO " + c);
-                    Alvo a;
-                    if (random.nextInt(100) < 70) {
-                        a = new AlvoComum(gameView.getWidth() / 2, gameView.getHeight() / 2, gameView.getWidth(), gameView.getHeight(), gameView, this);
-                    } else {
-                        a = new AlvoRapido(gameView.getWidth() / 2, gameView.getHeight() / 2, gameView.getWidth(), gameView.getHeight(), gameView, this);
-                    }
-                   // Log.d("ONDA", "ALVO CRIADO");
-                    if (a.getLado() == Lado.ESQUERDO) {
-                        alvosEsquerda.add(a);
-                    } else {
-                        alvosDireita.add(a);
-                    }
-                    a.start();
-                    Log.d("THREAD", "alvo criado id="+a.getId());
-                   // Log.d("ONDA", "DEPOIS START");
-                }
-                //numAlvos += 5;
-            } finally {
-                criandoOnda = false;
-                semaforoAlvos.release();
-                Log.d("ONDA","FIM criação");
-            }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            //Log.e("ONDA", "ERRO NA ONDA", e);
+
+        if (gameView == null || gameView.getWidth() == 0 || gameView.getHeight() == 0) {
+            return;
         }
+
+        criandoOnda = true;
+
+        try {
+
+            semaforoAlvos.acquire();
+
+            try {
+
+                for (int i = 0; i < numAlvos; i++) {
+
+                    Alvo alvo = criarAlvoAleatorio();
+
+                    if (alvo.getLado() == Lado.ESQUERDO) {
+                        alvosEsquerda.add(alvo);
+                    } else {
+                        alvosDireita.add(alvo);
+                    }
+
+                    alvo.start();
+                }
+
+                Log.d("ONDA",
+                        "Nova onda criada | Alvos=" + numAlvos +
+                                " | Threads=" + Thread.activeCount());
+
+            } finally {
+
+                semaforoAlvos.release();
+            }
+
+        } catch (InterruptedException e) {
+
+            Thread.currentThread().interrupt();
+
+            Log.e("ONDA",
+                    "Erro ao criar onda",
+                    e);
+
+        } finally {
+
+            criandoOnda = false;
+        }
+    }
+
+    private Alvo criarAlvoAleatorio() {
+
+        int largura = gameView.getWidth();
+        int altura = gameView.getHeight();
+
+        int x = largura / 2;
+        int y = altura / 2;
+
+        if (random.nextInt(100) < 70) {
+
+            return new AlvoComum(
+                    x,
+                    y,
+                    largura,
+                    altura,
+                    gameView,
+                    this
+            );
+        }
+
+        return new AlvoRapido(
+                x,
+                y,
+                largura,
+                altura,
+                gameView,
+                this
+        );
     }
 
     private void coletarDadosSensores() {
@@ -497,9 +479,45 @@ public class Jogo extends Thread {
         ultimaColeta = System.currentTimeMillis();
 
         coletarLado(alvosEsquerda, bufferEsquerda);
-
         coletarLado(alvosDireita, bufferDireita);
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     private void coletarLado(
             List<Alvo> alvos,
@@ -799,6 +817,56 @@ public class Jogo extends Thread {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
     private void otimizarLado(
             List<Canhao> canhoes,
             List<Alvo> alvos,
@@ -950,7 +1018,7 @@ public class Jogo extends Thread {
                 (numAlvos * taxaDisparoMedia)
                         - (numCanhoes * 2);
 
-        System.out.println(
+        Log.d("Jogo",
                 "Lado: " + lado +
                         " | Utilidade: " + utilidade +
                         " | Canhões: " + numCanhoes +
@@ -967,7 +1035,7 @@ public class Jogo extends Thread {
 
             adicionarCanhao(lado);
 
-            System.out.println(
+            Log.d("Jogo",
                     "NOVO CANHÃO ADICIONADO -> " + lado
             );
 
@@ -979,7 +1047,7 @@ public class Jogo extends Thread {
 
             canhoes.remove(remover);
 
-            System.out.println(
+            Log.d("Jogo",
                     "CANHÃO REMOVIDO -> " + lado
             );
         }
