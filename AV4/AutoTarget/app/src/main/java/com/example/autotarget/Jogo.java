@@ -9,25 +9,24 @@ import java.util.Random;
 import java.util.concurrent.Semaphore;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-public class Jogo {
+public class Jogo extends Thread {
 
     private FirebaseAuth mAuth;
     private FirebaseUser currentUser;
     private FirestoreRepository firestoreRepository;
     private ScheduledExecutorService telemetryScheduler;
     private volatile boolean desenhando = false;
+
+    private PerformanceMonitor performanceMonitor;
 
     private final List<Canhao> canhoesDesenho = new ArrayList<>();
     private final List<Alvo> alvosDesenho = new ArrayList<>();
@@ -81,11 +80,6 @@ public class Jogo {
     private boolean partidaIniciada = false;
     private boolean criandoOnda = false;
 
-    private ExecutorService executorAlvos;
-    private ExecutorService executorBalas;
-    private ExecutorService executorCanhoes;
-    private Map<Runnable, Future<?>> futures = new ConcurrentHashMap<>();
-
 
     private Semaphore semaforoAlvos = new Semaphore(1);
     private Semaphore semaforoBalas = new Semaphore(1);
@@ -109,10 +103,8 @@ public class Jogo {
         ultimaOtimizacao = 0;
         energiaEsquerda = iniEnergiaEsquerda;
         energiaDireita = iniEnergiaDireita;
+        performanceMonitor = new PerformanceMonitor();
 
-        executorAlvos = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        executorBalas = Executors.newCachedThreadPool();
-        executorCanhoes = Executors.newFixedThreadPool(10);
     }
 
     public void atualizar() {
@@ -374,14 +366,14 @@ public class Jogo {
             semaforoAlvos.acquire();
             try {
                 alvosEsquerda.removeIf(a -> {
-                    if(!a.getRunning()) {
+                    if(!a.getRunning() && !a.isAlive()) {
                         a.parar();   // IMPORTANTE
                         return true;
                     }
                     return false;
                 });
                 alvosDireita.removeIf(a -> {
-                    if(!a.getRunning()) {
+                    if(!a.getRunning() && !a.isAlive()) {
                         a.parar();
                         return true;
                     }
@@ -393,7 +385,7 @@ public class Jogo {
             semaforoBalas.acquire();
             try {
                 balas.removeIf(p -> {
-                    if(!p.getRunning()) {
+                    if(!p.getRunning() && !p.isAlive()) {
                         p.parar();
                         return true;
                     }
@@ -405,14 +397,14 @@ public class Jogo {
             semaforoCanhoes.acquire();
             try {
                 canhoesEsquerda.removeIf(c -> {
-                    if(!c.getRunning()) {
+                    if(!c.getRunning() && !c.isAlive()) {
                         c.parar();
                         return true;
                     }
                     return false;
                 });
                 canhoesDireita.removeIf(c -> {
-                    if(!c.getRunning()) {
+                    if(!c.getRunning() && !c.isAlive()) {
                         c.parar();
                         return true;
                     }
@@ -433,8 +425,7 @@ public class Jogo {
             try {
                 Bala b = new Bala(x, y, alvoX, alvoY, gameView, canhaoAtirador);
                 balas.add(b);
-                Future<?> future = executorBalas.submit(b);
-                futures.put(b, future);
+                b.start();
             } finally {
                 semaforoBalas.release();
             }
@@ -466,23 +457,22 @@ public class Jogo {
                     return;
                 }
                 for (int c = 0; c < numAlvos; c++) {
-                    // Log.d("ONDA", "CRIANDO ALVO " + c);
+                   // Log.d("ONDA", "CRIANDO ALVO " + c);
                     Alvo a;
                     if (random.nextInt(100) < 70) {
                         a = new AlvoComum(gameView.getWidth() / 2, gameView.getHeight() / 2, gameView.getWidth(), gameView.getHeight(), gameView, this);
                     } else {
                         a = new AlvoRapido(gameView.getWidth() / 2, gameView.getHeight() / 2, gameView.getWidth(), gameView.getHeight(), gameView, this);
                     }
-                    // Log.d("ONDA", "ALVO CRIADO");
+                   // Log.d("ONDA", "ALVO CRIADO");
                     if (a.getLado() == Lado.ESQUERDO) {
                         alvosEsquerda.add(a);
                     } else {
                         alvosDireita.add(a);
                     }
-                    Future<?> future = executorAlvos.submit(a);
-                    futures.put(a, future);
-                    Log.d("THREAD", "alvo criado id=");
-                    // Log.d("ONDA", "DEPOIS START");
+                    a.start();
+                    Log.d("THREAD", "alvo criado id="+a.getId());
+                   // Log.d("ONDA", "DEPOIS START");
                 }
                 //numAlvos += 5;
             } finally {
@@ -536,6 +526,8 @@ public class Jogo {
 
     public void iniciarPartida() {
 
+        performanceMonitor.iniciar();
+
         pararObjetosAtivos();
 
         energiaEsquerda = iniEnergiaEsquerda;
@@ -553,36 +545,31 @@ public class Jogo {
         ultimoSegundo = System.currentTimeMillis();
 
         criarOnda();
+
+
     }
 
     private void pararObjetosAtivos() {
+
         for (Alvo a : getAlvos()) {
             a.parar();
-            Future<?> f = futures.get(a);
-            if (f != null) f.cancel(true);
         }
+
         for (Canhao c : getCanhoes()) {
             c.parar();
-            Future<?> f = futures.get(c);
-            if (f != null) f.cancel(true);
         }
+
         for (Bala b : balas) {
             b.parar();
-            Future<?> f = futures.get(b);
-            if (f != null) f.cancel(true);
         }
-        for (Map.Entry<Runnable, Future<?>> entry : futures.entrySet()) {
-            entry.getValue().cancel(true);
-        }
+
         alvosEsquerda.clear();
         alvosDireita.clear();
+
         canhoesEsquerda.clear();
         canhoesDireita.clear();
+
         balas.clear();
-        futures.clear();
-        executorAlvos.shutdownNow();
-        executorBalas.shutdownNow();
-        executorCanhoes.shutdownNow();
     }
 
     private void atualizarMatrizIncidencia() {
@@ -657,8 +644,7 @@ public class Jogo {
                 } else {
                     canhoesDireita.add(novoCanhao);
                 }
-                Future<?> future = executorCanhoes.submit(novoCanhao);
-                futures.put(novoCanhao, future);
+                novoCanhao.start();
             } finally {
                 semaforoCanhoes.release();
             }
@@ -1023,8 +1009,6 @@ public class Jogo {
 
             remover.parar();
 
-            futures.get(remover).cancel(true);
-            futures.remove(remover);
             canhoes.remove(remover);
 
             System.out.println(
@@ -1054,8 +1038,24 @@ public class Jogo {
     }
 
     private void finalizarJogo() {
+
+        performanceMonitor.finalizar();
+        
         jogoFinalizado = true;
-        pararObjetosAtivos();
+
+        for (Alvo a : getAlvos()) {
+            a.parar();
+        }
+
+        for (Canhao c : getCanhoes()) {
+            c.parar();
+        }
+
+        for (Bala b : balas) {
+            b.parar();
+        }
+
+
     }
 
     public List<Canhao> getCanhoes(){
@@ -1113,10 +1113,11 @@ public class Jogo {
 
     public void parar() {
         running = false;
-        pararObjetosAtivos();
-        if (executorAlvos != null) executorAlvos.shutdownNow();
-        if (executorBalas != null) executorBalas.shutdownNow();
-        if (executorCanhoes != null) executorCanhoes.shutdownNow();
+        for (Alvo a : alvosEsquerda) a.parar();
+        for (Alvo a : alvosDireita) a.parar();
+        for (Canhao c : canhoesEsquerda) c.parar();
+        for (Canhao c : canhoesDireita) c.parar();
+        for (Bala b : balas) b.parar();
     }
 
     public void setCurrentUser(FirebaseUser user) {
@@ -1139,8 +1140,12 @@ public class Jogo {
         return currentTemperature;
     }
 
-    public void iniciarLoopPrincipal() {
-        Log.d("JOGO", "Loop principal do jogo iniciado.");
+    @Override
+    public void run() {
+        Log.d("JOGO", "Thread do jogo iniciada. id=" + Thread.currentThread().getId());
+        setPriority(Thread.NORM_PRIORITY);
+        Log.d("TELEMETRIA", "Scheduler iniciado");
+
         telemetryScheduler.scheduleAtFixedRate(() -> {
             currentUser = mAuth.getCurrentUser();
             if (currentUser != null && partidaIniciada) {
@@ -1150,37 +1155,52 @@ public class Jogo {
             }
         }, TELEMETRY_INTERVAL_SECONDS, TELEMETRY_INTERVAL_SECONDS, TimeUnit.SECONDS);
 
-        new Thread(() -> {
-            while (running) {
-                long inicio = System.nanoTime();
-                if (partidaIniciada && !jogoFinalizado) {
-                    atualizar();
-                    atualizarTempo();
-                    coletarDadosSensores();
-                    atualizarMatrizIncidencia();
-                    currentUser = mAuth.getCurrentUser();
 
-                    if (System.currentTimeMillis() - ultimaOtimizacao >= 10000) {
-                        otimizando = true;
-                        otimizarLado(canhoesEsquerda, alvosEsquerda, bufferEsquerda, Lado.ESQUERDO);
-                        otimizarLado(canhoesDireita, alvosDireita, bufferDireita, Lado.DIREITO);
-                        ultimaOtimizacao = System.currentTimeMillis();
-                        otimizando = false;
-                    }
+
+        // delay inicial igual ao intervalo, evita o 0 depreciado
+        setPriority(Thread.MAX_PRIORITY);
+
+        while (running) {
+            long inicio = System.nanoTime();
+            Log.d("THREADS", "Ativas = " + Thread.activeCount());
+            //Log.d("LOOP_JOGO", "rodando");
+            if (partidaIniciada && !jogoFinalizado) {
+                atualizar();
+                atualizarTempo();
+                coletarDadosSensores();
+                atualizarMatrizIncidencia();
+                // Atualizar o currentUser caso o login tenha sido feito após a inicialização do Jogo
+                currentUser = mAuth.getCurrentUser();
+
+
+                if (System.currentTimeMillis() - ultimaOtimizacao >= 10000) {
+                    otimizando=true;
+                    otimizarLado(canhoesEsquerda,alvosEsquerda,bufferEsquerda,Lado.ESQUERDO);
+                    otimizarLado(canhoesDireita,alvosDireita,bufferDireita,Lado.DIREITO);
+                    ultimaOtimizacao = System.currentTimeMillis();
+                    otimizando=false;
                 }
-                long fim = System.nanoTime();
-                long tempo = (fim - inicio) / 1000000;
-                try {
-                    Thread.sleep(Math.max(0, 16 - tempo));
-                } catch (InterruptedException e) {
-                    Log.e("JOGO", "ERRO NO LOOP", e);
-                    Thread.currentThread().interrupt();
-                }
+
+
             }
-            telemetryScheduler.shutdownNow();
-            pararObjetosAtivos();
-        }).start();
+            else {
+                // ADICIONE ISSO AQUI: Mantém a tela ativa/visível antes do jogo começar
+                //if (gameView != null) {
+                    //new Handler(Looper.getMainLooper()).post(() -> gameView.invalidate());
+                //}
+            }
+            long fim = System.nanoTime();
+            performanceMonitor.registrarFrame((fim - inicio)/1000000);
+            try {
+                Thread.sleep(16);
+            } catch (InterruptedException e) {
+                Log.e("JOGO", "ERRO NO LOOP", e);
+            }
+        }
+        // Ao parar o jogo, desligar o scheduler de telemetria
+        telemetryScheduler.shutdownNow();
     }
+
 
 
 }

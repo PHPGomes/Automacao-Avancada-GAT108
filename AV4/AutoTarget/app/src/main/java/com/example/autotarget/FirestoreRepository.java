@@ -69,7 +69,7 @@ public class FirestoreRepository {
     // RANKING GLOBAL
     public void getRanking(FirestoreCallback<List<Map<String,Object>>> callback) {
 
-        // Log.d("RANK", "BUSCANDO RANKING");
+       // Log.d("RANK", "BUSCANDO RANKING");
 
         db.collection("ranking")
                 .orderBy("finalScore", Query.Direction.DESCENDING)
@@ -83,7 +83,7 @@ public class FirestoreRepository {
 
                     for (QueryDocumentSnapshot doc : result) {
 
-                        // Log.d("RANK", doc.getData().toString());
+                       // Log.d("RANK", doc.getData().toString());
 
                         ranking.add(doc.getData());
                     }

@@ -11,16 +11,11 @@ public class AlvoComum extends Alvo {
 
     @Override
     public void run() {
-        // Define a prioridade da thread para o AlvoComum
-
         if (super.getTamX() > 0 && super.getTamY() > 0) {
             super.Atualizadestino();
         }
 
         while (super.getRunning()) {
-            if (!super.getRunning()) {
-                return;
-            }
             if (super.getTamX() > 0 && super.getTamY() > 0) {
                 super.mover();
             }
@@ -32,7 +27,6 @@ public class AlvoComum extends Alvo {
             try {
                 Thread.sleep(16);
             } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
                 super.setRunning(false);
                 return;
             }

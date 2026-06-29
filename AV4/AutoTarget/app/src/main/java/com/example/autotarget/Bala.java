@@ -6,7 +6,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.util.Log;
 
-public class Bala implements Runnable {
+public class Bala extends Thread {
 
     private Paint paint;
     private Path path;
@@ -127,13 +127,10 @@ public class Bala implements Runnable {
 
     @Override
     public void run() {
-        // Log.d("THREADS", "BALA INICIOU");
-
+       // Log.d("THREADS", "BALA INICIOU");
+        setPriority(Thread.MIN_PRIORITY);
         while (running) {
             long inicio = System.nanoTime();
-            if (!running) {
-                return;
-            }
             mover();
             long fim = System.nanoTime();
             long tempo = (fim - inicio) / 1000000;
@@ -148,6 +145,6 @@ public class Bala implements Runnable {
                 break;
             }
         }
-        // Log.d("THREADS", "BALA TERMINOU");
+       // Log.d("THREADS", "BALA TERMINOU");
     }
 }
