@@ -8,12 +8,22 @@ public class PerformanceMonitor {
     private long inicioExecucao;
     private long ultimoLog;
 
-    private long somaFrame = 0;
-    private long quantidadeFrames = 0;
+    private long somaFrame;
+    private long quantidadeFrames;
+
+    private int quantidadeAlvos;
+
+    public PerformanceMonitor(int quantidadeAlvos) {
+        this.quantidadeAlvos = quantidadeAlvos;
+    }
 
     public void iniciar() {
+
         inicioExecucao = System.currentTimeMillis();
         ultimoLog = inicioExecucao;
+
+        somaFrame = 0;
+        quantidadeFrames = 0;
     }
 
     public void registrarFrame(long tempoFrame) {
@@ -25,43 +35,132 @@ public class PerformanceMonitor {
 
         if (agora - ultimoLog >= 5000) {
 
-            double media = somaFrame / (double) quantidadeFrames;
-
-            Log.d("PERFORMANCE",
-                    "Tempo médio frame = "
-                            + media
-                            + " ms");
-
-            Log.d("PERFORMANCE",
-                    "Threads = "
-                            + Thread.activeCount());
-
-            Log.d("PERFORMANCE",
-                    "Heap = "
-                            + (Debug.getNativeHeapAllocatedSize()/1024)
-                            + " KB");
+            imprimirEstatisticas();
 
             ultimoLog = agora;
         }
     }
 
-    public void finalizar() {
+    private void imprimirEstatisticas() {
 
-        long tempo = System.currentTimeMillis() - inicioExecucao;
+        double tempoMedio = somaFrame / (double) quantidadeFrames;
 
-        Log.d("PERFORMANCE",
-                "Tempo total = "
-                        + tempo
-                        + " ms");
+        double fps;
 
-        Log.d("PERFORMANCE",
-                "Frames = "
-                        + quantidadeFrames);
+        if (tempoMedio > 0) {
+            fps = 1000.0 / tempoMedio;
+        } else {
+            fps = 0;
+        }
 
-        Log.d("PERFORMANCE",
-                "Tempo médio = "
-                        + (somaFrame/(double)quantidadeFrames)
-                        + " ms");
+        long heap =
+                Debug.getNativeHeapAllocatedSize() / 1024;
+
+        Log.d(
+                "AMDAHL",
+                "========================================"
+        );
+
+        Log.d(
+                "AMDAHL",
+                "Alvos: " + quantidadeAlvos
+        );
+
+        Log.d(
+                "AMDAHL",
+                "Threads: " + Thread.activeCount()
+        );
+
+        Log.d(
+                "AMDAHL",
+                String.format(
+                        "Tempo médio/frame: %.3f ms",
+                        tempoMedio
+                )
+        );
+
+        Log.d(
+                "AMDAHL",
+                String.format(
+                        "FPS médio: %.2f",
+                        fps
+                )
+        );
+
+        Log.d(
+                "AMDAHL",
+                "Heap: " + heap + " KB"
+        );
+
+        Log.d(
+                "AMDAHL",
+                "========================================"
+        );
     }
 
+    public void finalizar() {
+
+        long tempoTotal =
+                System.currentTimeMillis() - inicioExecucao;
+
+        double tempoMedio =
+                somaFrame / (double) quantidadeFrames;
+
+        double fps;
+
+        if (tempoMedio > 0) {
+            fps = 1000.0 / tempoMedio;
+        } else {
+            fps = 0;
+        }
+
+        Log.d(
+                "AMDAHL",
+                "******** RESULTADO FINAL ********"
+        );
+
+        Log.d(
+                "AMDAHL",
+                "Tempo total: " + tempoTotal + " ms"
+        );
+
+        Log.d(
+                "AMDAHL",
+                "Frames: " + quantidadeFrames
+        );
+
+        Log.d(
+                "AMDAHL",
+                String.format(
+                        "Tempo médio/frame: %.3f ms",
+                        tempoMedio
+                )
+        );
+
+        Log.d(
+                "AMDAHL",
+                String.format(
+                        "FPS médio: %.2f",
+                        fps
+                )
+        );
+
+        Log.d(
+                "AMDAHL",
+                "Threads finais: " + Thread.activeCount()
+        );
+
+        Log.d(
+                "AMDAHL",
+                "********************************"
+        );
+    }
+
+    public void setQuantidadeAlvos(int quantidadeAlvos) {
+        this.quantidadeAlvos = quantidadeAlvos;
+    }
+
+    public int getQuantidadeAlvos() {
+        return quantidadeAlvos;
+    }
 }

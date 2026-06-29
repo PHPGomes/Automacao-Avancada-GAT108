@@ -74,6 +74,17 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
+        Button btnHistorico = findViewById(R.id.btnHistorico);
+
+        btnHistorico.setOnClickListener(v -> {
+
+            Intent intent = new Intent(MainActivity.this,
+                    HistoricoActivity.class);
+
+            startActivity(intent);
+
+        });
+
 
     }
 

@@ -25,6 +25,8 @@ public class Jogo extends Thread {
     private FirestoreRepository firestoreRepository;
     private ScheduledExecutorService telemetryScheduler;
     private volatile boolean desenhando = false;
+    private List<MedidaRecon> medidasRecon = new ArrayList<>();
+
 
     private PerformanceMonitor performanceMonitor;
 
@@ -103,7 +105,7 @@ public class Jogo extends Thread {
         ultimaOtimizacao = 0;
         energiaEsquerda = iniEnergiaEsquerda;
         energiaDireita = iniEnergiaDireita;
-        performanceMonitor = new PerformanceMonitor();
+        performanceMonitor = new PerformanceMonitor(numAlvos);
 
     }
 
@@ -795,16 +797,18 @@ public class Jogo extends Thread {
                 .reconcile(y, V, A);
     }
 
+
+
     private void otimizarLado(
             List<Canhao> canhoes,
             List<Alvo> alvos,
             Map<Alvo, List<LeituraSensor>> buffer,
             Lado lado
     ) {
-        if(canhoes.size() * alvos.size() == 0){
+
+        if (canhoes == null || alvos == null || buffer == null) {
             return;
         }
-
 
         if (canhoes.isEmpty() || alvos.isEmpty()) {
             return;
@@ -813,13 +817,8 @@ public class Jogo extends Thread {
         int numCanhoes = canhoes.size();
         int numAlvos = alvos.size();
 
-        // Vetor de medições
         double[] y = new double[numCanhoes * numAlvos];
-
-        // Matriz de covariância
         double[][] V = new double[y.length][y.length];
-
-        // Matriz de incidência
         double[][] A = new double[y.length][y.length];
 
         int indice = 0;
@@ -855,7 +854,6 @@ public class Jogo extends Thread {
                     media = soma / leituras.size();
                 }
 
-                // Variância
                 double variancia = 1;
 
                 if (!leituras.isEmpty()) {
@@ -880,11 +878,8 @@ public class Jogo extends Thread {
                 }
 
                 y[indice] = media;
-
-                // Matriz V diagonal
                 V[indice][indice] = variancia;
 
-                // Matriz A
                 if (media < 500) {
                     A[indice][indice] = 1;
                 } else {
@@ -895,30 +890,21 @@ public class Jogo extends Thread {
             }
         }
 
-        // =========================
-        // RECONCILIAÇÃO
-        // =========================
-
         double[] yHat;
 
         try {
 
             yHat = DataReconciliation.reconcile(y, V, A);
-            if(yHat.length != y.length) {
+
+            if (yHat == null || yHat.length != y.length) {
                 yHat = y;
             }
 
         } catch (Exception e) {
 
             e.printStackTrace();
-
-            // fallback
             yHat = y;
         }
-
-        // =========================
-        // REALOCAÇÃO DOS CANHÕES
-        // =========================
 
         indice = 0;
 
@@ -930,11 +916,7 @@ public class Jogo extends Thread {
 
             for (Alvo a : alvos) {
 
-                double distanciaReconciliada = 0;
-
-                if(indice < yHat.length){
-                    distanciaReconciliada = yHat[indice];
-                }
+                double distanciaReconciliada = yHat[indice];
 
                 if (distanciaReconciliada < 500) {
 
@@ -949,16 +931,12 @@ public class Jogo extends Thread {
 
             if (contador > 0) {
 
-                int alvoX = (int)(somaX / contador);
-                int alvoY = (int)(somaY / contador);
+                int alvoX = (int) (somaX / contador);
+                int alvoY = (int) (somaY / contador);
 
                 c.definirDestino(alvoX, alvoY);
             }
         }
-
-        // =========================
-        // FUNÇÃO DE UTILIDADE
-        // =========================
 
         double taxaDisparoMedia = 0;
 
@@ -977,21 +955,14 @@ public class Jogo extends Thread {
                         " | Utilidade: " + utilidade +
                         " | Canhões: " + numCanhoes +
                         " | Energia: " +
-                        (lado == Lado.ESQUERDO ?
-                                energiaEsquerda :
-                                energiaDireita)
+                        (lado == Lado.ESQUERDO ? energiaEsquerda : energiaDireita)
         );
-
-        // =========================
-        // DECISÃO GULOSA
-        // =========================
 
         double energiaAtual =
                 (lado == Lado.ESQUERDO)
                         ? energiaEsquerda
                         : energiaDireita;
 
-        // adiciona canhão com histerese
         if (energiaAtual > ENERGY_ADD_THRESHOLD && numCanhoes < numAlvos) {
 
             adicionarCanhao(lado);
@@ -999,13 +970,10 @@ public class Jogo extends Thread {
             System.out.println(
                     "NOVO CANHÃO ADICIONADO -> " + lado
             );
-        }
 
-        // remove canhão com histerese
-        else if (energiaAtual < ENERGY_REMOVE_THRESHOLD && numCanhoes > 1) {
+        } else if (energiaAtual < ENERGY_REMOVE_THRESHOLD && numCanhoes > 1) {
 
-            Canhao remover =
-                    canhoes.get(canhoes.size() - 1);
+            Canhao remover = canhoes.get(canhoes.size() - 1);
 
             remover.parar();
 

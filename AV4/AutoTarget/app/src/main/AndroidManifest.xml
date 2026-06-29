@@ -31,6 +31,9 @@
             android:exported="false"
             android:label="Ranking Mundial" />
 
+        <activity
+            android:name=".HistoricoActivity"/>
+
     </application>
 
 </manifest>

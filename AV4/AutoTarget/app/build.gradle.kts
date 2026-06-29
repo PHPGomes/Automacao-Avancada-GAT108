@@ -42,6 +42,7 @@ dependencies {
 
     // ROOM
     implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
     annotationProcessor("androidx.room:room-compiler:2.6.1")
 
     // FIREBASE
@@ -51,6 +52,9 @@ dependencies {
 
     // APACHE COMMONS MATH
     implementation("org.apache.commons:commons-math3:3.6.1")
+
+    // CardView
+    implementation("androidx.cardview:cardview:1.0.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
