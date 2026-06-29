@@ -1134,7 +1134,7 @@ public class Jogo extends Thread {
         Log.d("JOGO", "Thread do jogo iniciada. id=" + Thread.currentThread().getId());
         setPriority(Thread.NORM_PRIORITY);
         Log.d("TELEMETRIA", "Scheduler iniciado");
-        /*
+
         telemetryScheduler.scheduleAtFixedRate(() -> {
             currentUser = mAuth.getCurrentUser();
             if (currentUser != null && partidaIniciada) {
@@ -1143,7 +1143,7 @@ public class Jogo extends Thread {
                 applyTemperatureFeedback();
             }
         }, TELEMETRY_INTERVAL_SECONDS, TELEMETRY_INTERVAL_SECONDS, TimeUnit.SECONDS);
-*/
+
 
 
         // delay inicial igual ao intervalo, evita o 0 depreciado
