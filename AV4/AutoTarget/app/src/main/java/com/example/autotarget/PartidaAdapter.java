@@ -22,16 +22,23 @@ public class PartidaAdapter extends RecyclerView.Adapter<PartidaAdapter.ViewHold
 
     @NonNull
     @Override
-    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public ViewHolder onCreateViewHolder(
+            @NonNull ViewGroup parent,
+            int viewType
+    ) {
 
-        View view = LayoutInflater.from(parent.getContext())
+        View view = LayoutInflater
+                .from(parent.getContext())
                 .inflate(R.layout.item_partida, parent, false);
 
         return new ViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+    public void onBindViewHolder(
+            @NonNull ViewHolder holder,
+            int position
+    ) {
 
         Partida partida = partidas.get(position);
 
@@ -44,18 +51,21 @@ public class PartidaAdapter extends RecyclerView.Adapter<PartidaAdapter.ViewHold
                         + partida.pontosDireita
         );
 
-        holder.tempo.setText(
-                "Tempo: "
-                        + partida.tempo
-                        + " s"
+        holder.canhões.setText(
+                "Canhões: "
+                        + partida.canhoesEsquerda
+                        + " x "
+                        + partida.canhoesDireita
         );
 
-        String data = new SimpleDateFormat(
+        holder.tempo.setText("Tempo: " + partida.tempo + " s");
+
+        String dataFormatada = new SimpleDateFormat(
                 "dd/MM/yyyy HH:mm",
                 Locale.getDefault()
         ).format(partida.data);
 
-        holder.data.setText(data);
+        holder.data.setText(dataFormatada);
     }
 
     @Override
@@ -67,6 +77,7 @@ public class PartidaAdapter extends RecyclerView.Adapter<PartidaAdapter.ViewHold
 
         TextView usuario;
         TextView pontos;
+        TextView canhões;
         TextView tempo;
         TextView data;
 
@@ -75,6 +86,7 @@ public class PartidaAdapter extends RecyclerView.Adapter<PartidaAdapter.ViewHold
 
             usuario = itemView.findViewById(R.id.txtUsuario);
             pontos = itemView.findViewById(R.id.txtPontos);
+            canhões = itemView.findViewById(R.id.txtCanhoes);
             tempo = itemView.findViewById(R.id.txtTempo);
             data = itemView.findViewById(R.id.txtData);
         }

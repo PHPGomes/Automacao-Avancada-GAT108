@@ -18,5 +18,4 @@ public interface PartidaDao {
 
     @Delete
     void excluir(Partida partida);
-
 }

@@ -8,12 +8,16 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class HistoricoActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
     private TextView txtResumoHistorico;
+
+    private final ExecutorService executor =
+            Executors.newSingleThreadExecutor();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,21 +33,31 @@ public class HistoricoActivity extends AppCompatActivity {
     }
 
     private void carregarHistorico() {
-        Executors.newSingleThreadExecutor().execute(() -> {
+
+        executor.execute(() -> {
 
             List<Partida> partidas = DatabaseProvider
                     .get(getApplicationContext())
                     .partidaDao()
                     .listar();
 
-            runOnUiThread(() -> {
-                PartidaAdapter adapter = new PartidaAdapter(partidas);
-                recyclerView.setAdapter(adapter);
-
-                txtResumoHistorico.setText(
-                        "Histórico de partidas (" + partidas.size() + ")"
-                );
-            });
+            runOnUiThread(() -> atualizarTela(partidas));
         });
+    }
+
+    private void atualizarTela(List<Partida> partidas) {
+
+        PartidaAdapter adapter = new PartidaAdapter(partidas);
+        recyclerView.setAdapter(adapter);
+
+        txtResumoHistorico.setText(
+                "Histórico de partidas (" + partidas.size() + ")"
+        );
+    }
+
+    @Override
+    protected void onDestroy() {
+        executor.shutdownNow();
+        super.onDestroy();
     }
 }

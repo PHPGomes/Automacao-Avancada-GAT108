@@ -4,27 +4,22 @@ import android.content.Context;
 
 import androidx.room.Room;
 
-import com.example.autotarget.AppDatabase;
-
 public class DatabaseProvider {
 
     private static AppDatabase db;
 
-    public static AppDatabase get(Context context){
+    public static synchronized AppDatabase get(Context context) {
 
-        if(db == null){
-
+        if (db == null) {
             db = Room.databaseBuilder(
-                            context,
+                            context.getApplicationContext(),
                             AppDatabase.class,
-                            "autotarget.db")
+                            "autotarget.db"
+                    )
                     .fallbackToDestructiveMigration()
                     .build();
-
         }
 
         return db;
-
     }
-
 }

@@ -12,15 +12,12 @@ public class Partida {
     public String usuario;
 
     public int pontosEsquerda;
-
     public int pontosDireita;
 
-    public long data;
-
     public int canhoesEsquerda;
-
     public int canhoesDireita;
 
     public int tempo;
 
+    public long data;
 }
