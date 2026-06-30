@@ -5,6 +5,9 @@ import android.util.Log;
 
 public class PerformanceMonitor {
 
+    private static final String TAG = "AMDAHL";
+    private static final long INTERVALO_LOG_MS = 5000;
+
     private long inicioExecucao;
     private long ultimoLog;
 
@@ -33,7 +36,7 @@ public class PerformanceMonitor {
 
         long agora = System.currentTimeMillis();
 
-        if (agora - ultimoLog >= 5000) {
+        if (agora - ultimoLog >= INTERVALO_LOG_MS) {
 
             imprimirEstatisticas();
 
@@ -43,59 +46,19 @@ public class PerformanceMonitor {
 
     private void imprimirEstatisticas() {
 
-        double tempoMedio = somaFrame / (double) quantidadeFrames;
-
-        double fps;
-
-        if (tempoMedio > 0) {
-            fps = 1000.0 / tempoMedio;
-        } else {
-            fps = 0;
-        }
+        double tempoMedio = calcularTempoMedioFrame();
+        double fps = calcularFPS();
 
         long heap =
                 Debug.getNativeHeapAllocatedSize() / 1024;
 
-        Log.d(
-                "AMDAHL",
-                "========================================"
-        );
-
-        Log.d(
-                "AMDAHL",
-                "Alvos: " + quantidadeAlvos
-        );
-
-        Log.d(
-                "AMDAHL",
-                "Threads: " + Thread.activeCount()
-        );
-
-        Log.d(
-                "AMDAHL",
-                String.format(
-                        "Tempo médio/frame: %.3f ms",
-                        tempoMedio
-                )
-        );
-
-        Log.d(
-                "AMDAHL",
-                String.format(
-                        "FPS médio: %.2f",
-                        fps
-                )
-        );
-
-        Log.d(
-                "AMDAHL",
-                "Heap: " + heap + " KB"
-        );
-
-        Log.d(
-                "AMDAHL",
-                "========================================"
-        );
+        Log.d(TAG, "========================================");
+        Log.d(TAG, "Alvos: " + quantidadeAlvos);
+        Log.d(TAG, "Threads: " + Thread.activeCount());
+        Log.d(TAG, String.format("Tempo médio/frame: %.3f ms", tempoMedio));
+        Log.d(TAG, String.format("FPS médio: %.2f", fps));
+        Log.d(TAG, "Heap: " + heap + " KB");
+        Log.d(TAG, "========================================");
     }
 
     public void finalizar() {
@@ -103,57 +66,37 @@ public class PerformanceMonitor {
         long tempoTotal =
                 System.currentTimeMillis() - inicioExecucao;
 
-        double tempoMedio =
-                somaFrame / (double) quantidadeFrames;
+        Log.d(TAG, "******** RESULTADO FINAL ********");
+        Log.d(TAG, "Tempo total: " + tempoTotal + " ms");
+        Log.d(TAG, "Frames: " + quantidadeFrames);
+        Log.d(TAG,
+                String.format("Tempo médio/frame: %.3f ms",
+                        calcularTempoMedioFrame()));
+        Log.d(TAG,
+                String.format("FPS médio: %.2f",
+                        calcularFPS()));
+        Log.d(TAG, "Threads finais: " + Thread.activeCount());
+        Log.d(TAG, "********************************");
+    }
 
-        double fps;
+    private double calcularTempoMedioFrame() {
 
-        if (tempoMedio > 0) {
-            fps = 1000.0 / tempoMedio;
-        } else {
-            fps = 0;
+        if (quantidadeFrames == 0) {
+            return 0;
         }
 
-        Log.d(
-                "AMDAHL",
-                "******** RESULTADO FINAL ********"
-        );
+        return somaFrame / (double) quantidadeFrames;
+    }
 
-        Log.d(
-                "AMDAHL",
-                "Tempo total: " + tempoTotal + " ms"
-        );
+    private double calcularFPS() {
 
-        Log.d(
-                "AMDAHL",
-                "Frames: " + quantidadeFrames
-        );
+        double tempoMedio = calcularTempoMedioFrame();
 
-        Log.d(
-                "AMDAHL",
-                String.format(
-                        "Tempo médio/frame: %.3f ms",
-                        tempoMedio
-                )
-        );
+        if (tempoMedio <= 0) {
+            return 0;
+        }
 
-        Log.d(
-                "AMDAHL",
-                String.format(
-                        "FPS médio: %.2f",
-                        fps
-                )
-        );
-
-        Log.d(
-                "AMDAHL",
-                "Threads finais: " + Thread.activeCount()
-        );
-
-        Log.d(
-                "AMDAHL",
-                "********************************"
-        );
+        return 1000.0 / tempoMedio;
     }
 
     public void setQuantidadeAlvos(int quantidadeAlvos) {

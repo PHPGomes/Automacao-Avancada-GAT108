@@ -12,16 +12,12 @@ public class AlvoComum extends Alvo {
     @Override
     public void run() {
         if (super.getTamX() > 0 && super.getTamY() > 0) {
-            super.Atualizadestino();
+            super.atualizarDestino();
         }
 
         while (super.getRunning()) {
             if (super.getTamX() > 0 && super.getTamY() > 0) {
                 super.mover();
-            }
-
-            if (super.getGameView() != null) {
-                super.getGameView().postInvalidate();
             }
 
             try {

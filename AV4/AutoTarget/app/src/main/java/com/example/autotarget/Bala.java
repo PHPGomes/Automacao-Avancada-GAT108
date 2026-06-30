@@ -4,92 +4,119 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.util.Log;
 
 public class Bala extends Thread {
 
-    private Paint paint;
-    private Path path;
-    private boolean running = true;
-    private GameView gameView;
-    private Canhao canhaoAtirador; // Referência ao canhão que disparou a bala
-    private Lado lado;
-    private int x, y, size, xAlvo, yAlvo, vel;
-    private long lastMove;
-    private boolean ativa;
-    private double dx, dy;
+    private static final int TAMANHO = 12;
+    private static final int VELOCIDADE = 10;
+    private static final int INTERVALO_MOVIMENTO_MS = 16;
 
-    public Bala(int xCanhao, int yCanhao, int xAlvo, int yAlvo, GameView gameView, Canhao canhaoAtirador) {
-        paint = new Paint();
+    private final Paint paint;
+    private final Path path;
+
+    private volatile boolean running = true;
+
+    private final GameView gameView;
+    private final Canhao canhaoAtirador;
+    private final Lado lado;
+
+    private int x;
+    private int y;
+
+    private final double dx;
+    private final double dy;
+
+    public Bala(
+            int xCanhao,
+            int yCanhao,
+            int xAlvo,
+            int yAlvo,
+            GameView gameView,
+            Canhao canhaoAtirador
+    ) {
+
+        this.x = xCanhao;
+        this.y = yCanhao;
+        this.gameView = gameView;
+        this.canhaoAtirador = canhaoAtirador;
+        this.lado = canhaoAtirador.getLado();
+
+        paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint.setColor(Color.BLACK);
         paint.setStyle(Paint.Style.FILL);
 
         path = new Path();
-
-        x = xCanhao;
-        y = yCanhao;
 
         int deltaX = xAlvo - x;
         int deltaY = yAlvo - y;
 
         double distancia = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-        // Prevenção de divisão por zero (CRASH CRÍTICO)
         if (distancia == 0) {
             dx = 0;
             dy = 0;
         } else {
-            // normaliza (vetor unitário)
             dx = deltaX / distancia;
             dy = deltaY / distancia;
         }
-
-        this.gameView = gameView;
-        this.canhaoAtirador = canhaoAtirador; // Armazena a referência do canhão atirador
-        this.lado = canhaoAtirador.getLado();
-        size = 12;
-        lastMove = 0;
-        vel = 10;
-        ativa = false;
     }
 
     public void draw(Canvas canvas) {
+
         path.reset();
 
-        // topo esquerda
-        path.moveTo(x - size, y);
-
-        // base esquerda
-        path.lineTo(x - size, y + size);
-
-        // base direita
-        path.lineTo(x + size, y + size);
-
-        // topo direita
-        path.lineTo(x + size, y);
-
+        path.moveTo(x - TAMANHO, y);
+        path.lineTo(x - TAMANHO, y + TAMANHO);
+        path.lineTo(x + TAMANHO, y + TAMANHO);
+        path.lineTo(x + TAMANHO, y);
         path.close();
 
         canvas.drawPath(path, paint);
     }
 
-    private synchronized void mover() {
-        if (System.currentTimeMillis() - lastMove >= 16) {
-            lastMove = System.currentTimeMillis();
-            x += dx * vel;
-            y += dy * vel;
+    private void mover() {
+
+        x += dx * VELOCIDADE;
+        y += dy * VELOCIDADE;
+
+        verificarLimites();
+    }
+
+    private void verificarLimites() {
+
+        if (gameView == null || gameView.getWidth() == 0 || gameView.getHeight() == 0) {
+            parar();
+            return;
         }
+
         int metade = gameView.getWidth() / 2;
+
         if (lado == Lado.ESQUERDO && x > metade) {
             parar();
+            return;
         }
+
         if (lado == Lado.DIREITO && x < metade) {
             parar();
+            return;
         }
-        // sair da tela → remove bala
-        if (gameView != null && (x < 0 || x > gameView.getWidth() || y < 0 || y > gameView.getHeight())) {
+
+        if (x < 0 || x > gameView.getWidth() || y < 0 || y > gameView.getHeight()) {
             parar();
         }
+    }
+
+    public void parar() {
+        running = false;
+        interrupt();
+    }
+
+    public boolean getRunning() {
+        return running;
+    }
+
+    public Canhao getCanhaoAtirador() {
+        return canhaoAtirador;
     }
 
     public int getX() {
@@ -100,51 +127,24 @@ public class Bala extends Thread {
         return y;
     }
 
-    public void setAtiva() {
-        ativa = true;
-    }
-
-    public void setAlvo(int x, int y) {
-        xAlvo = x;
-        yAlvo = y;
-    }
-
-    public boolean getRunning() {
-        return running;
-    }
-
-    public boolean getAtividade() {
-        return ativa;
-    }
-
-    public Canhao getCanhaoAtirador() {
-        return canhaoAtirador;
-    }
-
-    public void parar(){
-        running = false;
-    }
-
     @Override
     public void run() {
-       // Log.d("THREADS", "BALA INICIOU");
+
         setPriority(Thread.MIN_PRIORITY);
+
         while (running) {
-            long inicio = System.nanoTime();
+
             mover();
-            long fim = System.nanoTime();
-            long tempo = (fim - inicio) / 1000000;
-            // evita null
-            //if (gameView != null) {
-            //    gameView.postInvalidate();
-            //}
+
             try {
-                Thread.sleep(16);
+
+                Thread.sleep(INTERVALO_MOVIMENTO_MS);
+
             } catch (InterruptedException e) {
+
                 running = false;
-                break;
+                Thread.currentThread().interrupt();
             }
         }
-       // Log.d("THREADS", "BALA TERMINOU");
     }
 }
