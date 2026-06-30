@@ -5,134 +5,199 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
-
-import java.util.ArrayList;
 
 public class GameView extends View {
 
-
     private Jogo jogo;
-    private Paint texto1;
-    private Paint texto2;
-    private Paint line;
-    private Paint ladoEsquerdo;
-    private Paint ladoDireito;
 
-
+    private final Paint textoPrincipal;
+    private final Paint linhaCentral;
+    private final Paint campoEsquerdo;
+    private final Paint campoDireito;
+    private final Paint textoVencedor;
 
     public GameView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        texto1 = new Paint();
-        texto2 = new Paint();
-        line = new Paint();
-        ladoEsquerdo = new Paint();
-        ladoDireito = new Paint();
-        ladoEsquerdo.setColor(Color.rgb(180,220,255));
-        ladoDireito.setColor(Color.rgb(255,200,200));
-        line.setColor(Color.BLACK);
-        line.setStrokeWidth(5);
-        texto1.setColor(Color.BLACK);
-        texto1.setTextSize(60);
-        texto2.setColor(Color.BLACK);
-        texto2.setTextSize(60);
+
+        textoPrincipal = new Paint(Paint.ANTI_ALIAS_FLAG);
+        textoPrincipal.setColor(Color.BLACK);
+        textoPrincipal.setTextSize(60);
+
+        linhaCentral = new Paint(Paint.ANTI_ALIAS_FLAG);
+        linhaCentral.setColor(Color.BLACK);
+        linhaCentral.setStrokeWidth(5);
+
+        campoEsquerdo = new Paint();
+        campoEsquerdo.setColor(Color.rgb(180, 220, 255));
+
+        campoDireito = new Paint();
+        campoDireito.setColor(Color.rgb(255, 200, 200));
+
+        textoVencedor = new Paint(Paint.ANTI_ALIAS_FLAG);
+        textoVencedor.setColor(Color.WHITE);
+        textoVencedor.setTextSize(100);
     }
 
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
+
         if (jogo == null) {
             jogo = new Jogo(this);
         }
     }
 
     @Override
-    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-        super.onSizeChanged(w, h, oldw, oldh);
+    protected void onDetachedFromWindow() {
+        if (jogo != null) {
+            jogo.parar();
+        }
+
+        super.onDetachedFromWindow();
+    }
+
+    @Override
+    protected void onSizeChanged(int largura, int altura, int oldw, int oldh) {
+        super.onSizeChanged(largura, altura, oldw, oldh);
+
         if (jogo != null && !jogo.isAlive()) {
             jogo.start();
         }
     }
 
-
     @Override
     protected void onDraw(Canvas canvas) {
-
-        if (getWidth() == 0 || getHeight() == 0 || jogo == null) {
-            return;
-        }
         super.onDraw(canvas);
 
-        if(jogo != null){
-            jogo.liberarDesenho();
+        if (jogo == null || getWidth() == 0 || getHeight() == 0) {
+            return;
         }
+
+        desenharCampo(canvas);
+        desenharInterface(canvas);
+        desenharObjetos(canvas);
+
+        if (jogo.isJogoFinalizado()) {
+            desenharResultado(canvas);
+        }
+    }
+
+    private void desenharCampo(Canvas canvas) {
+        int largura = getWidth();
+        int altura = getHeight();
+        int metade = largura / 2;
+
         canvas.drawColor(Color.BLACK);
 
-        canvas.drawRect(0, 0, getWidth()/2, getHeight(), ladoEsquerdo);
-        canvas.drawRect(getWidth()/2, 0, getWidth(), getHeight(), ladoDireito);
-        canvas.drawLine(getWidth() / 2, 0, getWidth() / 2, getHeight(), line);
+        canvas.drawRect(0, 0, metade, altura, campoEsquerdo);
+        canvas.drawRect(metade, 0, largura, altura, campoDireito);
+        canvas.drawLine(metade, 0, metade, altura, linhaCentral);
+    }
 
-        canvas.drawText("Pontos: " + jogo.getPontuacao1(), 50, 80, texto1);
-        canvas.drawText("Pontos: " + jogo.getPontuacao2(), 590, 80, texto2);
-        canvas.drawText("Energia: " + (int) jogo.getEnergiaEsquerda(),50,150,texto1);
-        canvas.drawText("Energia: " + (int) jogo.getEnergiaDireita(),590,150,texto2);
-        canvas.drawText("Tempo: " + jogo.getTempoRestante(),getWidth()/2 - 460,getHeight() - 200,texto1);
-        //("GAMEVIEW", "ANTES DOS OBJETOS");
+    private void desenharInterface(Canvas canvas) {
+        int largura = getWidth();
+        int altura = getHeight();
+        int metade = largura / 2;
 
+        canvas.drawText(
+                "Pontos: " + jogo.getPontuacao1(),
+                50,
+                80,
+                textoPrincipal
+        );
 
+        canvas.drawText(
+                "Pontos: " + jogo.getPontuacao2(),
+                metade + 50,
+                80,
+                textoPrincipal
+        );
 
-        for (Canhao c : jogo.getCanhoes()) {
-            c.draw(canvas);
+        canvas.drawText(
+                "Energia: " + (int) jogo.getEnergiaEsquerda(),
+                50,
+                150,
+                textoPrincipal
+        );
+
+        canvas.drawText(
+                "Energia: " + (int) jogo.getEnergiaDireita(),
+                metade + 50,
+                150,
+                textoPrincipal
+        );
+
+        canvas.drawText(
+                "Tempo: " + jogo.getTempoRestante(),
+                metade - 180,
+                altura - 80,
+                textoPrincipal
+        );
+    }
+
+    private void desenharObjetos(Canvas canvas) {
+
+        for (Canhao canhao : jogo.getCanhoes()) {
+            if (canhao != null && canhao.getRunning()) {
+                canhao.draw(canvas);
+            }
         }
 
-
-        for (Alvo a : jogo.getAlvos()) {
-            a.draw(canvas);
+        for (Alvo alvo : jogo.getAlvos()) {
+            if (alvo != null && alvo.getRunning()) {
+                alvo.draw(canvas);
+            }
         }
 
-        for (Bala b : jogo.getBalas()) {
-            b.draw(canvas);
-        }
-
-
-       // Log.d("GAMEVIEW", "DEPOIS DOS OBJETOS");
-        if (jogo.isJogoFinalizado()) {
-
-            Paint vencedor = new Paint();
-            vencedor.setTextSize(100);
-            vencedor.setColor(Color.WHITE);
-            String texto;
-            if (jogo.getPontuacao1() > jogo.getPontuacao2()) {
-                texto = "ESQUERDA VENCEU";
-                canvas.drawText(texto,getWidth()/2 - 440,getHeight()/2,vencedor);
-            } else if (jogo.getPontuacao2() > jogo.getPontuacao1()) {
-                texto = "DIREITA VENCEU";
-                canvas.drawText(texto,getWidth()/2 - 380,getHeight()/2,vencedor);
-            } else {
-                texto = "EMPATE";
-                canvas.drawText(texto,getWidth()/2 - 205,getHeight()/2,vencedor);
+        for (Bala bala : jogo.getBalas()) {
+            if (bala != null && bala.getRunning()) {
+                bala.draw(canvas);
             }
         }
     }
 
+    private void desenharResultado(Canvas canvas) {
+        String resultado;
+
+        if (jogo.getPontuacao1() > jogo.getPontuacao2()) {
+            resultado = "ESQUERDA VENCEU";
+        } else if (jogo.getPontuacao2() > jogo.getPontuacao1()) {
+            resultado = "DIREITA VENCEU";
+        } else {
+            resultado = "EMPATE";
+        }
+
+        float larguraTexto = textoVencedor.measureText(resultado);
+
+        canvas.drawText(
+                resultado,
+                (getWidth() - larguraTexto) / 2f,
+                getHeight() / 2f,
+                textoVencedor
+        );
+    }
+
     @Override
     public void invalidate() {
-
-        if(!isShown()){
+        if (!isShown()) {
             return;
         }
 
         super.invalidate();
     }
 
-
     public void adicionarCanhao(Lado lado) {
-        jogo.adicionarCanhao(lado);
-        invalidate();
+        if (jogo != null) {
+            jogo.adicionarCanhao(lado);
+            invalidate();
+        }
     }
+
     public void iniciarJogo() {
-        jogo.iniciarPartida();
+        if (jogo != null) {
+            jogo.iniciarPartida();
+        }
     }
 
     public Jogo getJogo() {
