@@ -222,7 +222,7 @@ public class Canhao extends Thread {
     @Override
     public void run() {
 
-        setPriority(Thread.NORM_PRIORITY);
+        setPriority(Thread.MIN_PRIORITY);
 
         while (running) {
 

@@ -17,6 +17,19 @@ public class GameView extends View {
     private final Paint campoEsquerdo;
     private final Paint campoDireito;
     private final Paint textoVencedor;
+    private boolean renderizando = false;
+    private final Runnable renderLoop = new Runnable() {
+        @Override
+        public void run() {
+            if (!renderizando) {
+                return;
+            }
+
+            invalidate();
+
+            postDelayed(this, 16);
+        }
+    };
 
     public GameView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -47,10 +60,16 @@ public class GameView extends View {
         if (jogo == null) {
             jogo = new Jogo(this);
         }
+
+        renderizando = true;
+        post(renderLoop);
     }
 
     @Override
     protected void onDetachedFromWindow() {
+        renderizando = false;
+        removeCallbacks(renderLoop);
+
         if (jogo != null) {
             jogo.parar();
         }

@@ -117,9 +117,9 @@ public class Jogo extends Thread {
             criarOnda();
         }
 
-        if (gameView != null) {
-            gameView.post(() -> gameView.invalidate());
-        }
+        //if (gameView != null) {
+        //    gameView.post(() -> gameView.invalidate());
+        //}
     }
 
     public boolean temAlvos() {
@@ -1163,14 +1163,10 @@ public class Jogo extends Thread {
         Log.d("JOGO",
                 "Thread do jogo iniciada. id=" + Thread.currentThread().getId());
 
-        setPriority(Thread.MAX_PRIORITY);
-
+        setPriority(Thread.NORM_PRIORITY);
         iniciarTelemetria();
-
         while (running) {
-
             long inicio = System.nanoTime();
-
             try {
 
                 processarCicloJogo();
@@ -1181,9 +1177,7 @@ public class Jogo extends Thread {
                         "Erro no ciclo principal",
                         e);
             }
-
             dormirLoop();
-
             long fim = System.nanoTime();
 
             if (performanceMonitor != null) {
@@ -1196,7 +1190,6 @@ public class Jogo extends Thread {
             telemetryScheduler.shutdownNow();
         }
     }
-
     private void iniciarTelemetria() {
 
         if (telemetryScheduler == null || telemetryScheduler.isShutdown()) {

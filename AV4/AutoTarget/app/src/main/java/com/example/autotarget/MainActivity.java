@@ -28,24 +28,40 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        FirebaseApp.initializeApp(this);
-
-        mAuth = FirebaseAuth.getInstance();
-
-        currentUser = mAuth.getCurrentUser();
-
-        if (currentUser == null) {
-            abrirLogin();
-            return;
-        }
-
         setContentView(R.layout.activity_main);
 
-        inicializarViews();
-        configurarBotoes();
-        updateUI(currentUser);
+        gameView = findViewById(R.id.gameView);
+
+        Button btnIniciar = findViewById(R.id.btnIniciar);
+        Button btnAdicionarEsquerda = findViewById(R.id.btnAdicionarEsquerda);
+        Button btnAdicionarDireita = findViewById(R.id.btnAdicionarDireita);
+        Button btnLogin = findViewById(R.id.btnLogin);
+        Button btnRanking = findViewById(R.id.btnRanking);
+        Button btnHistorico = findViewById(R.id.btnHistorico);
+
+        btnIniciar.setOnClickListener(v -> {
+            if (gameView != null) gameView.iniciarJogo();
+        });
+
+        btnAdicionarEsquerda.setOnClickListener(v -> {
+            if (gameView != null) gameView.adicionarCanhao(Lado.ESQUERDO);
+        });
+
+        btnAdicionarDireita.setOnClickListener(v -> {
+            if (gameView != null) gameView.adicionarCanhao(Lado.DIREITO);
+        });
+
+        btnLogin.setOnClickListener(v ->
+                startActivity(new Intent(this, LoginActivity.class)));
+
+        btnRanking.setOnClickListener(v ->
+                startActivity(new Intent(this, RankingActivity.class)));
+
+        btnHistorico.setOnClickListener(v ->
+                startActivity(new Intent(this, HistoricoActivity.class)));
     }
 
+    /*
     @Override
     protected void onResume() {
         super.onResume();
@@ -58,6 +74,8 @@ public class MainActivity extends AppCompatActivity {
             updateUI(currentUser);
         }
     }
+
+     */
 
     private void inicializarViews() {
         gameView = findViewById(R.id.gameView);
