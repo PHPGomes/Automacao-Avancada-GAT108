@@ -5,41 +5,50 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class Canhao extends Thread {
 
-    private int x, y, size, numBalas;
-    private int destinoX;
-    private int destinoY;
-    private Paint paint;
-    private Path path;
-    private boolean running = true;
-    private GameView gameView;
-    private long ultimoTiro;
-    private Jogo jogo;
-    private Lado lado;
-    private int delayTiros;
-    private double capacidade;
+    private static final int TAMANHO = 60;
+    private static final int RAIO_DESTINO = 20;
+    private static final int VELOCIDADE_MOVIMENTO = 4;
+
     private static final int LIMITE_CANHOES = 5;
     private static final int DELAY_BASE = 1500;
+    private static final int NUM_BALAS_INICIAL = 999;
 
-    public Canhao(int x, int y, GameView gameView, Jogo jogo,Lado lado) {
+    private int x;
+    private int y;
+
+    private int destinoX;
+    private int destinoY;
+
+    private int numBalas = NUM_BALAS_INICIAL;
+
+    private final Paint paint;
+    private final Path path;
+
+    private volatile boolean running = true;
+
+    private long ultimoTiro = 0;
+
+    private final GameView gameView;
+    private final Jogo jogo;
+    private final Lado lado;
+
+    public Canhao(int x, int y, GameView gameView, Jogo jogo, Lado lado) {
+
         this.x = x;
         this.y = y;
-        this.size = 60;
+
+        this.destinoX = x;
+        this.destinoY = y;
+
         this.gameView = gameView;
         this.jogo = jogo;
-        delayTiros = DELAY_BASE;
         this.lado = lado;
-        numBalas = 999;
-        ultimoTiro = 0;
-        capacidade = 1000.0 / calcularDelay();
-        destinoX = x;
-        destinoY = y;
 
-        paint = new Paint();
+        paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint.setColor(Color.BLUE);
         paint.setStyle(Paint.Style.FILL);
 
@@ -47,69 +56,67 @@ public class Canhao extends Thread {
     }
 
     public void draw(Canvas canvas) {
+
         path.reset();
-        // topo
+
         path.moveTo(x, y);
-        // base esquerda
-        path.lineTo(x - size, y + size);
-        // base direita
-        path.lineTo(x + size, y + size);
+        path.lineTo(x - TAMANHO, y + TAMANHO);
+        path.lineTo(x + TAMANHO, y + TAMANHO);
         path.close();
+
         canvas.drawPath(path, paint);
-        canvas.drawCircle(
-                destinoX,
-                destinoY,
-                20,
-                paint
-        );
+        canvas.drawCircle(destinoX, destinoY, RAIO_DESTINO, paint);
     }
 
     public void atirar() {
-        if (!temEnergia()) return;
-        delayTiros = calcularDelay();
-        if (numBalas <= 0) return;
-        if (System.currentTimeMillis() - ultimoTiro > delayTiros) {
-            Alvo alvo = escolherAlvo();
-            if (alvo == null) return;
-            int aX = alvo.getX();
-            int aY = alvo.getY();
-            if (!jogo.consumirEnergia(lado)) {
-                return;
-            }
-            // Passa 'this' (o próprio canhão) para que a bala saiba quem atirou
-            jogo.criarBala(x, y + size, aX, aY, this);
-            numBalas--;
-            ultimoTiro = System.currentTimeMillis();
+
+        if (!temEnergia() || numBalas <= 0) {
+            return;
         }
+
+        long agora = System.currentTimeMillis();
+        int delayAtual = calcularDelay();
+
+        if (agora - ultimoTiro <= delayAtual) {
+            return;
+        }
+
+        Alvo alvo = escolherAlvo();
+
+        if (alvo == null) {
+            return;
+        }
+
+        if (!jogo.consumirEnergia(lado)) {
+            return;
+        }
+
+        jogo.criarBala(
+                x,
+                y + TAMANHO,
+                alvo.getX(),
+                alvo.getY(),
+                this
+        );
+
+        numBalas--;
+        ultimoTiro = agora;
     }
 
     private void mover() {
+        x = aproximar(x, destinoX, VELOCIDADE_MOVIMENTO);
+        y = aproximar(y, destinoY, VELOCIDADE_MOVIMENTO);
+    }
 
-        int velocidade = 4;
+    private int aproximar(int atual, int destino, int velocidade) {
 
-        // eixo X
-        int dx = destinoX - x;
+        int erro = destino - atual;
 
-        if (Math.abs(dx) > velocidade) {
-
-            x += (dx > 0) ? velocidade : -velocidade;
-
-        } else {
-
-            x = destinoX;
+        if (Math.abs(erro) <= velocidade) {
+            return destino;
         }
 
-        // eixo Y
-        int dy = destinoY - y;
-
-        if (Math.abs(dy) > velocidade) {
-
-            y += (dy > 0) ? velocidade : -velocidade;
-
-        } else {
-
-            y = destinoY;
-        }
+        return atual + (erro > 0 ? velocidade : -velocidade);
     }
 
     private boolean temEnergia() {
@@ -130,54 +137,74 @@ public class Canhao extends Thread {
         return running;
     }
 
-    public void parar(){
+    public void parar() {
         running = false;
+        interrupt();
     }
 
     private Alvo escolherAlvo() {
+
         List<Alvo> alvos = jogo.getAlvosPorLado(lado);
-        if (alvos.isEmpty()) return null;
+
+        if (alvos == null || alvos.isEmpty()) {
+            return null;
+        }
 
         Alvo alvoEscolhido = null;
         double menorDistancia = Double.MAX_VALUE;
 
         for (Alvo alvo : alvos) {
-            if (!alvo.getRunning()) continue;
-            if (alvo.getLado() != lado) continue;
 
-            double dx = alvo.getX() - x;
-            double dy = alvo.getY() - y;
-            double dist = Math.sqrt(dx * dx + dy * dy);
+            if (alvo == null || !alvo.getRunning()) {
+                continue;
+            }
 
-            if (dist < menorDistancia) {
-                menorDistancia = dist;
+            if (alvo.getLado() != lado) {
+                continue;
+            }
+
+            double distancia = calcularDistancia(alvo);
+
+            if (distancia < menorDistancia) {
+                menorDistancia = distancia;
                 alvoEscolhido = alvo;
             }
         }
+
         return alvoEscolhido;
+    }
+
+    private double calcularDistancia(Alvo alvo) {
+
+        double dx = alvo.getX() - x;
+        double dy = alvo.getY() - y;
+
+        return Math.sqrt(dx * dx + dy * dy);
     }
 
     private int calcularDelay() {
 
-        int quantidade;
-        if (lado == Lado.ESQUERDO) {
-            quantidade = jogo.getCanhoesEsquerda().size();
+        int quantidade =
+                lado == Lado.ESQUERDO
+                        ? jogo.getCanhoesEsquerda().size()
+                        : jogo.getCanhoesDireita().size();
 
-        } else {
-            quantidade = jogo.getCanhoesDireita().size();
-        }
-        if (quantidade <= LIMITE_CANHOES) {
-            return DELAY_BASE;
-        }
-        int excesso = quantidade - LIMITE_CANHOES;
-        double fator = 1 + (excesso * 0.2);
+        double fator = 1.0;
 
-        // Feedback do sistema ciberfísico: se superaquecendo, reduz a taxa de disparo (aumenta o delay)
+        if (quantidade > LIMITE_CANHOES) {
+            int excesso = quantidade - LIMITE_CANHOES;
+            fator += excesso * 0.2;
+        }
+
         if (jogo.isOverheating()) {
-            fator *= 1.5; // Aumenta o delay em 50%
+            fator *= 1.5;
         }
 
-        return (int)(DELAY_BASE * fator);
+        return (int) (DELAY_BASE * fator);
+    }
+
+    public double getCapacidade() {
+        return 1000.0 / calcularDelay();
     }
 
     public int getX() {
@@ -191,34 +218,29 @@ public class Canhao extends Thread {
     public Lado getLado() {
         return lado;
     }
-    public double getCapacidade() {
-        capacidade = 1000.0 / calcularDelay();
-        return capacidade;
-    }
 
     @Override
     public void run() {
+
         setPriority(Thread.NORM_PRIORITY);
+
         while (running) {
-            long inicio = System.nanoTime();
+
             mover();
             atirar();
-            long fim = System.nanoTime();
-            long tempo = (fim - inicio) / 1000000;
+
             if (numBalas <= 0) {
                 running = false;
             }
-/*
-            if (gameView != null) {
-                gameView.postInvalidate();
-            }
 
- */
             try {
+
                 Thread.sleep(50);
+
             } catch (InterruptedException e) {
+
                 running = false;
-                break;
+                Thread.currentThread().interrupt();
             }
         }
     }
