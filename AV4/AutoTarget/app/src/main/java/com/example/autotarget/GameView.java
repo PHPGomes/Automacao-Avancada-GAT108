@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 
 public class GameView extends View {
@@ -138,19 +139,19 @@ public class GameView extends View {
 
     private void desenharObjetos(Canvas canvas) {
 
-        for (Canhao canhao : jogo.getCanhoes()) {
+        for (Canhao canhao : jogo.getSnapshotCanhoes()) {
             if (canhao != null && canhao.getRunning()) {
                 canhao.draw(canvas);
             }
         }
 
-        for (Alvo alvo : jogo.getAlvos()) {
+        for (Alvo alvo : jogo.getSnapshotAlvos()) {
             if (alvo != null && alvo.getRunning()) {
                 alvo.draw(canvas);
             }
         }
 
-        for (Bala bala : jogo.getBalas()) {
+        for (Bala bala : jogo.getSnapshotBalas()) {
             if (bala != null && bala.getRunning()) {
                 bala.draw(canvas);
             }
@@ -178,14 +179,6 @@ public class GameView extends View {
         );
     }
 
-    @Override
-    public void invalidate() {
-        if (!isShown()) {
-            return;
-        }
-
-        super.invalidate();
-    }
 
     public void adicionarCanhao(Lado lado) {
         if (jogo != null) {

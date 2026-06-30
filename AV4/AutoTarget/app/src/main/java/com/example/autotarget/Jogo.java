@@ -78,6 +78,8 @@ public class Jogo extends Thread {
     private static final double ENERGY_ADD_THRESHOLD = 25.0;
     private static final double ENERGY_REMOVE_THRESHOLD = 10.0;
 
+
+
     public Jogo(GameView gameView) {
         mAuth = FirebaseAuth.getInstance();
         currentUser = mAuth.getCurrentUser();
@@ -102,16 +104,21 @@ public class Jogo extends Thread {
     }
 
     public void atualizar() {
+
         verificarColisoes();
+
         removerMortos();
+
         if (!jogoFinalizado
                 && getAlvos().isEmpty()
                 && !criandoOnda
                 && !otimizando) {
+
             criarOnda();
         }
+
         if (gameView != null) {
-            gameView.postInvalidate();
+            gameView.post(() -> gameView.invalidate());
         }
     }
 
@@ -1089,6 +1096,16 @@ public class Jogo extends Thread {
 
     public double getEnergiaDireita() {
         return energiaDireita;
+    }
+
+    public List<Canhao> getSnapshotCanhoes() {
+        return new ArrayList<>(getCanhoes());
+    }
+    public List<Alvo> getSnapshotAlvos() {
+        return new ArrayList<>(getAlvos());
+    }
+    public List<Bala> getSnapshotBalas() {
+        return new ArrayList<>(balas);
     }
 
     public void parar() {
