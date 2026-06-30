@@ -1165,13 +1165,14 @@ public class Jogo extends Thread {
                         e);
             }
 
+            dormirLoop();
+
             long fim = System.nanoTime();
 
             if (performanceMonitor != null) {
                 performanceMonitor.registrarFrame((fim - inicio) / 1000000);
             }
 
-            dormirLoop();
         }
 
         if (telemetryScheduler != null) {
